@@ -1,4 +1,5 @@
-import Home from "./assets/Pages/Home"
+import Home from "./Pages/Home"
+
 
 
 const App = () => {
