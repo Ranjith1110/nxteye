@@ -1,6 +1,6 @@
-import Hero from '../components/home/Hero'
-import Navbar from '../components/home/Navbar'
-import WearTheTrend from '../components/home/WearTheTrend'
+import Hero from '../components/nome/Hero'
+import Navbar from '../components/nome/Navbar'
+import WearTheTrend from '../components/nome/WearTheTrend'
 
 const Home = () => {
   return (
