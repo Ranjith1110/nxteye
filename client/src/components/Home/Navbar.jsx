@@ -11,8 +11,11 @@ import {
     IoMenuOutline,
     IoCloseOutline,
     IoChevronDown,
-    IoLocation
+    IoLocation,
+    IoMail
 } from 'react-icons/io5';
+import { FaPhoneVolume } from "react-icons/fa6";
+
 
 const TOPBAR_HEIGHT = 40; // px
 
@@ -157,7 +160,12 @@ export default function Navbar() {
                 <div className="bg-black text-white">
                     <div className="px-4 sm:px-6 h-10 flex justify-between items-center text-xs sm:text-sm">
                         <div className="flex items-center space-x-4">
-                            <a href="#" className="text-white flex items-center gap-1"><IoLocation />Ramanathapuram</a>
+                            <a href="#" className="text-white flex items-center gap-1 text-[14px] md:text-xs"><FaPhoneVolume />
+                                <span className='hidden md:block'>+91 7869369994</span></a>
+                            <a href="#" className="text-white flex items-center gap-1 text-lg md:text-xs"><IoMail />
+                                <span className='hidden md:block'>nxteyeopticals@gmail.com</span></a>
+                            <a href="#" className="text-white flex items-center gap-1 text-lg md:text-xs"><IoLocation />
+                                <span className='hidden md:block'>Ramanathapuram</span></a>
                         </div>
                         <div className="flex items-center space-x-2">
                             <a href="#" className="text-white text-lg"><FaFacebook /></a>
@@ -204,8 +212,8 @@ export default function Navbar() {
                                     {/* Dropdown */}
                                     <div
                                         className={`absolute top-[calc(100%+2px)] ${alignRight ? 'right-0' : 'left-0'} w-[480px] md:w-[570px] bg-white/80 border border-blue-100 backdrop-blur-xl shadow-2xl rounded-2xl z-50 transition-all duration-200 origin-top glassy-menu ${openDropdownIndex === idx
-                                                ? 'opacity-100 translate-y-0 pointer-events-auto'
-                                                : 'opacity-0 translate-y-2 pointer-events-none'
+                                            ? 'opacity-100 translate-y-0 pointer-events-auto'
+                                            : 'opacity-0 translate-y-2 pointer-events-none'
                                             }`}
                                     >
                                         <div className="grid grid-cols-2 gap-4 p-6">
