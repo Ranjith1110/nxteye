@@ -127,40 +127,40 @@ const Prescription = () => {
         if (whatsappNumber.length === 10) whatsappNumber = "91" + whatsappNumber;
 
         const msg = `
-🌟 *NxtEye Optical - Eye Checkup Report* 👁️
+            *NxtEye Optical - Eye Checkup Report*
 
-━━━━━━━━━━━━━━━━━━━
-📅 *Date:* ${form.date}
-🧪 *Test Type:* ${form.eyeTestType}
-👤 *Name:* ${form.name}
-📱 *Mobile:* ${form.mobile}
-🚻 *Gender:* ${form.gender}
-🎂 *DOB:* ${form.dob}
-━━━━━━━━━━━━━━━━━━━
+            ━━━━━━━━━━━━━━━━━━━
+            *Date:* ${form.date}
+            *Test Type:* ${form.eyeTestType}
+            *Name:* ${form.name}
+            *Mobile:* ${form.mobile}
+            *Gender:* ${form.gender}
+            *DOB:* ${form.dob}
+            ━━━━━━━━━━━━━━━━━━━
 
-👁️ *LEFT EYE*
-• SPH: ${form.left.SPH || "-"}
-• CYL: ${form.left.CYL || "-"}
-• AXIS: ${form.left.AXIS || "-"}
-• ADD: ${form.left.ADD || "-"}
-• PD: ${form.left.PD || "-"}
-• Distance VA: ${form.left.DistanceVA || "-"}
-• Near VA: ${form.left.NearVA || "-"}
+            *LEFT EYE*
+            • SPH: ${form.left.SPH || "-"}
+            • CYL: ${form.left.CYL || "-"}
+            • AXIS: ${form.left.AXIS || "-"}
+            • ADD: ${form.left.ADD || "-"}
+            • PD: ${form.left.PD || "-"}
+            • Distance VA: ${form.left.DistanceVA || "-"}
+            • Near VA: ${form.left.NearVA || "-"}
 
-👁️ *RIGHT EYE*
-• SPH: ${form.right.SPH || "-"}
-• CYL: ${form.right.CYL || "-"}
-• AXIS: ${form.right.AXIS || "-"}
-• ADD: ${form.right.ADD || "-"}
-• PD: ${form.right.PD || "-"}
-• Distance VA: ${form.right.DistanceVA || "-"}
-• Near VA: ${form.right.NearVA || "-"}
-━━━━━━━━━━━━━━━━━━━
+            *RIGHT EYE*
+            • SPH: ${form.right.SPH || "-"}
+            • CYL: ${form.right.CYL || "-"}
+            • AXIS: ${form.right.AXIS || "-"}
+            • ADD: ${form.right.ADD || "-"}
+            • PD: ${form.right.PD || "-"}
+            • Distance VA: ${form.right.DistanceVA || "-"}
+            • Near VA: ${form.right.NearVA || "-"}
+            ━━━━━━━━━━━━━━━━━━━
 
-✨ *Thank you for trusting NxtEye Optical!*  
-Your vision, our care 👓  
-📍 _Stay Clear. Stay Confident._
-`;
+            *Thank you for trusting NxtEye Optical!*  
+            Your vision, our care
+            _Stay Clear. Stay Confident._
+            `;
 
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg.trim())}`;
         window.open(url, "_blank");
