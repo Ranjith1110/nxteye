@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Home from "./pages/Home.jsx";
-import Login from "./pages/Login.jsx";
-import Dashboard from "./admin/Dashboard.jsx";
-import Prescription from "./admin/Prescription.jsx";
-import Billing from "./admin/Billing.jsx";
-import Items from "./admin/Items.jsx";
-import History from "./admin/History.jsx";
+import Home from "./page/Home";
+import Login from "./page/Login";
+import Dashboard from "./admin/Dashboard";
+import Prescription from "./admin/Prescription";
+import Billing from "./admin/Billing";
+import Items from "./admin/Items";
+import History from "./admin/History";
 
 // 🔒 Protected Route Component
 const ProtectedRoute = ({ children }) => {
