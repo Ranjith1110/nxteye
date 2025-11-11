@@ -41,7 +41,7 @@ const Login = () => {
             // Redirect after toast delay
             setTimeout(() => {
                 navigate("/dashboard");
-            }, 2200);
+            }, 2000);
         } else {
             toast("Invalid credentials! Please try again.", {
                 position: "bottom-right",
