@@ -1,10 +1,10 @@
 import express from "express";
 import {
-  getItems,
-  addItem,
-  bulkUpload,
-  editItem,
-  deleteItem,
+    getItems,
+    addItem,
+    bulkUpload,
+    editItem,
+    deleteItem,
 } from "../controllers/itemController.js";
 
 const router = express.Router();
