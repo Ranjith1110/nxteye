@@ -15,7 +15,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/items`;
+const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/items`;
 
 const Items = () => {
     const [items, setItems] = useState([]);
