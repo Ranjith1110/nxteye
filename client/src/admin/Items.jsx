@@ -7,6 +7,7 @@ import {
     DownloadCloud,
     UploadCloud,
     Upload,
+    XCircle,
 } from "lucide-react";
 import Layout from "../components/dashboard/Layout";
 import * as XLSX from "xlsx";
@@ -14,7 +15,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/items`;
+const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/items`;
 
 const Items = () => {
     const [items, setItems] = useState([]);
@@ -28,6 +29,10 @@ const Items = () => {
         gst: "",
         stock: "",
     });
+
+    // For Edit Modal
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editItem, setEditItem] = useState(null);
 
     // 🔹 Fetch all items from backend
     useEffect(() => {
@@ -75,24 +80,33 @@ const Items = () => {
         }
     };
 
-    // 🔹 Edit Item (PUT)
-    const handleEdit = async (itemId, oldName) => {
-        const newName = prompt("Edit Item Name:", oldName);
-        if (!newName || newName.trim() === "") return;
+    // 🔹 Open Edit Modal
+    const openEditModal = (item) => {
+        setEditItem({ ...item });
+        setEditModalOpen(true);
+    };
 
+    // 🔹 Save Edited Item
+    const handleSaveEdit = async () => {
         try {
-            const res = await axios.put(`${API_URL}/${itemId}`, { itemName: newName });
-            setItems(items.map((item) => (item._id === itemId ? res.data : item)));
-            toast.success("Item updated");
+            const updatedData = {
+                ...editItem,
+                cgst: Number(editItem.gst) / 2,
+                sgst: Number(editItem.gst) / 2,
+            };
+
+            const res = await axios.put(`${API_URL}/${editItem._id}`, updatedData);
+            setItems(items.map((it) => (it._id === editItem._id ? res.data : it)));
+            setEditModalOpen(false);
+            toast.success("Item updated successfully");
         } catch (error) {
             console.error(error);
-            toast.error("Error editing item");
+            toast.error("Error updating item");
         }
     };
 
     // 🔹 Delete Item (DELETE)
     const handleDelete = async (itemId) => {
-        if (!window.confirm("Are you sure you want to delete this item?")) return;
         try {
             await axios.delete(`${API_URL}/${itemId}`);
             setItems(items.filter((item) => item._id !== itemId));
@@ -138,7 +152,6 @@ const Items = () => {
                     stock: Number(row[5] || 0),
                 }));
 
-                // Send to backend
                 await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
                 const res = await axios.get(API_URL);
                 setItems(res.data);
@@ -214,7 +227,7 @@ const Items = () => {
                                         <td className="border p-2 text-center">{item.stock}</td>
                                         <td className="border p-2 text-center flex justify-center gap-2">
                                             <button
-                                                onClick={() => handleEdit(item._id, item.itemName)}
+                                                onClick={() => openEditModal(item)}
                                                 className="p-1 rounded hover:bg-gray-100"
                                             >
                                                 <Edit2 size={16} />
@@ -237,60 +250,25 @@ const Items = () => {
                 <div className="mt-8">
                     <h4 className="font-semibold text-lg mb-3">Single Upload</h4>
                     <div className="flex flex-wrap gap-3 mb-3">
-                        <input
-                            className="border rounded-md p-2 text-sm w-36"
-                            placeholder="Item Number"
-                            value={singleUpload.itemNumber}
-                            onChange={(e) =>
-                                setSingleUpload({ ...singleUpload, itemNumber: e.target.value })
-                            }
-                        />
-                        <input
-                            className="border rounded-md p-2 text-sm w-36"
-                            placeholder="Item Name"
-                            value={singleUpload.itemName}
-                            onChange={(e) =>
-                                setSingleUpload({ ...singleUpload, itemName: e.target.value })
-                            }
-                        />
-                        <input
-                            className="border rounded-md p-2 text-sm w-36"
-                            placeholder="Item Type"
-                            value={singleUpload.itemType}
-                            onChange={(e) =>
-                                setSingleUpload({ ...singleUpload, itemType: e.target.value })
-                            }
-                        />
-                        <input
-                            className="border rounded-md p-2 text-sm w-36"
-                            placeholder="Item Price"
-                            type="number"
-                            value={singleUpload.itemPrice}
-                            onChange={(e) =>
-                                setSingleUpload({ ...singleUpload, itemPrice: e.target.value })
-                            }
-                        />
-                        <select
-                            className="border rounded-md p-2 text-sm w-28"
-                            value={singleUpload.gst}
-                            onChange={(e) =>
-                                setSingleUpload({ ...singleUpload, gst: e.target.value })
-                            }
-                        >
-                            <option value="">GST %</option>
-                            <option value="5">5%</option>
-                            <option value="12">12%</option>
-                            <option value="18">18%</option>
-                        </select>
-                        <input
-                            className="border rounded-md p-2 text-sm w-28"
-                            placeholder="Stock"
-                            type="number"
-                            value={singleUpload.stock}
-                            onChange={(e) =>
-                                setSingleUpload({ ...singleUpload, stock: e.target.value })
-                            }
-                        />
+                        {[
+                            { key: "itemNumber", placeholder: "Item Number" },
+                            { key: "itemName", placeholder: "Item Name" },
+                            { key: "itemType", placeholder: "Item Type" },
+                            { key: "itemPrice", placeholder: "Item Price", type: "number" },
+                            { key: "gst", placeholder: "GST %", type: "number" },
+                            { key: "stock", placeholder: "Stock", type: "number" },
+                        ].map(({ key, placeholder, type }) => (
+                            <input
+                                key={key}
+                                className="border rounded-md p-2 text-sm w-36"
+                                placeholder={placeholder}
+                                type={type || "text"}
+                                value={singleUpload[key]}
+                                onChange={(e) =>
+                                    setSingleUpload({ ...singleUpload, [key]: e.target.value })
+                                }
+                            />
+                        ))}
                     </div>
                     <button
                         className="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
@@ -322,6 +300,48 @@ const Items = () => {
                     </label>
                 </div>
             </div>
+
+            {/* 🧩 Edit Modal */}
+            {editModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-[90%] max-w-md relative shadow-lg">
+                        <button
+                            onClick={() => setEditModalOpen(false)}
+                            className="absolute top-3 right-3 text-gray-500 hover:text-red-500"
+                        >
+                            <XCircle size={22} />
+                        </button>
+                        <h3 className="text-lg font-semibold mb-4">Edit Item</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                "itemNumber",
+                                "itemName",
+                                "itemType",
+                                "itemPrice",
+                                "gst",
+                                "stock",
+                            ].map((key) => (
+                                <input
+                                    key={key}
+                                    className="border rounded-md p-2 text-sm"
+                                    placeholder={key.replace("item", "Item ")}
+                                    type={key.includes("Price") || key.includes("gst") ? "number" : "text"}
+                                    value={editItem[key]}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, [key]: e.target.value })
+                                    }
+                                />
+                            ))}
+                        </div>
+                        <button
+                            className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full"
+                            onClick={handleSaveEdit}
+                        >
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Toast Container */}
             <ToastContainer
