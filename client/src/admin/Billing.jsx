@@ -1,6 +1,6 @@
 import React from "react";
 import Layout from "../components/dashboard/Layout";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 
 const Billing = () => {
     return (
@@ -14,7 +14,7 @@ const Billing = () => {
                 {/* Bill Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-600">Bill No</label>
+                        <label className="block text-sm font-medium text-gray-600">Invoice No</label>
                         <input
                             type="text"
                             className="w-full mt-1 p-2 border rounded-md focus:ring focus:ring-blue-100"
@@ -62,6 +62,7 @@ const Billing = () => {
                                 className="w-full mt-1 p-2 border rounded-md focus:ring focus:ring-blue-100"
                             />
                         </div>
+                        <button className="bg-[#5ce1e6] text-[#03214a] px-4 py-1 rounded-full font-medium hover:bg-[#03214a] hover:text-white transition">Save</button>
                     </div>
                 </div>
 
@@ -92,6 +93,7 @@ const Billing = () => {
                                     <th className="border p-2">CGST%</th>
                                     <th className="border p-2">SGST%</th>
                                     <th className="border p-2">Amount</th>
+                                    <th className="border p-2">Add to Cart</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -105,17 +107,7 @@ const Billing = () => {
                                     <td className="border p-2 text-center">5%</td>
                                     <td className="border p-2 text-center">5%</td>
                                     <td className="border p-2 text-center">10</td>
-                                </tr>
-                                <tr>
-                                    <td className="border p-2 text-center">2</td>
-                                    <td className="border p-2">nxteye - 002</td>
-                                    <td className="border p-2">Cooling lens</td>
-                                    <td className="border p-2">Lens</td>
-                                    <td className="border p-2 text-center">1000/-</td>
-                                    <td className="border p-2 text-center">5%</td>
-                                    <td className="border p-2 text-center">5%</td>
-                                    <td className="border p-2 text-center">5%</td>
-                                    <td className="border p-2 text-center">10</td>
+                                    <td className="border p-2 text-center flex justify-center"> <button>Add Item </button><Plus /> </td>
                                 </tr>
                             </tbody>
                         </table>
