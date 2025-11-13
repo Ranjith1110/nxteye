@@ -1,3 +1,4 @@
+// billingRoutes.js
 import express from "express";
 import Billing from "../models/billingModel.js";
 
@@ -21,33 +22,10 @@ router.get("/invoice", async (req, res) => {
     }
 });
 
-// ✅ POST customer info only (no invoice number stored)
-router.post("/", async (req, res) => {
-    try {
-        const date = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
-        const { customerName, mobileNumber, gender, dob } = req.body;
+// --- router.post("/") for customer-only save has been REMOVED ---
+// --- It is now handled by customerRoutes.js ---
 
-        if (!customerName || !mobileNumber) {
-            return res.status(400).json({ message: "Missing required fields" });
-        }
-
-        const billing = new Billing({
-            date,
-            customerName,
-            mobileNumber,
-            gender,
-            dob,
-        });
-
-        await billing.save();
-        res.status(201).json({ message: "Customer saved successfully", billing });
-    } catch (error) {
-        console.error("Billing Save Error:", error);
-        res.status(500).json({ message: error.message || "Server error" });
-    }
-});
-
-// ✅ POST full bill on Submit
+// ✅ POST full bill on Submit (No changes)
 router.post("/submit", async (req, res) => {
     try {
         const {
@@ -84,4 +62,4 @@ router.post("/submit", async (req, res) => {
     }
 });
 
-export default router;  // ✅ THIS LINE IS REQUIRED
+export default router;

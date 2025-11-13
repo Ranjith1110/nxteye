@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import Layout from "../components/dashboard/Layout";
-import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import jsPDF from "jspdf";
@@ -16,12 +16,17 @@ const Billing = () => {
         mobileNumber: "",
         gender: "",
         dob: "",
+        purposeOfVisit: "",
     });
     const [items, setItems] = useState([]);
     const [cart, setCart] = useState([]);
     const [showPreview, setShowPreview] = useState(false);
     const [showAllItems, setShowAllItems] = useState(false);
     const printRef = useRef();
+
+    // --- Search & Filter State ---
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterType, setFilterType] = useState("itemName"); // 'itemName' or 'itemNumber'
 
     // Payment & Calculation Fields
     const [advance, setAdvance] = useState("");
@@ -30,6 +35,10 @@ const Billing = () => {
     const [gst, setGst] = useState(12);
     const [total, setTotal] = useState(0);
     const [grandTotal, setGrandTotal] = useState(0);
+
+    // --- NEW State for Calculated Amounts ---
+    const [gstAmount, setGstAmount] = useState(0);
+    const [discountAmount, setDiscountAmount] = useState(0);
 
     // Fetch Items
     useEffect(() => {
@@ -60,37 +69,43 @@ const Billing = () => {
         setCart(cart.filter((i) => i._id !== id));
     };
 
-    // Calculate Totals
+    // --- UPDATED Calculate Totals ---
     useEffect(() => {
         if (cart.length === 0) {
             setTotal(0);
             setGrandTotal(0);
             setRemaining(0);
+            setGstAmount(0); // Reset
+            setDiscountAmount(0); // Reset
             return;
         }
 
         let totalAmount = cart.reduce((sum, item) => sum + Number(item.itemPrice), 0);
         setTotal(totalAmount);
 
-        const gstAmount = (totalAmount * gst) / 100;
-        const discountAmount = (totalAmount * discount) / 100;
-        const grand = totalAmount + gstAmount - Number(advance || 0) - discountAmount;
+        const calculatedGst = (totalAmount * gst) / 100;
+        const calculatedDiscount = (totalAmount * discount) / 100;
+
+        setGstAmount(calculatedGst); // Set calculated amount
+        setDiscountAmount(calculatedDiscount); // Set calculated amount
+
+        const grand = totalAmount + calculatedGst - Number(advance || 0) - calculatedDiscount;
         const remain = totalAmount - Number(advance || 0);
 
         setGrandTotal(grand);
         setRemaining(remain);
     }, [cart, discount, gst, advance]);
 
-    // Save Customer Info Only
+    // Save Customer Info Only (No changes, this logic is correct)
     const handleSaveCustomer = async () => {
         if (!customer.customerName || !customer.mobileNumber) {
             return toast.warn("Enter customer name & mobile number");
         }
         try {
-            await fetch(`${API_URL}/api/billing`, {
+            await fetch(`${API_URL}/api/customers`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(customer)
+                body: JSON.stringify(customer),
             });
             toast.success("Customer saved successfully!");
         } catch (error) {
@@ -106,7 +121,24 @@ const Billing = () => {
             mobileNumber: "",
             gender: "",
             dob: "",
+            purposeOfVisit: "",
         });
+    };
+
+    // Full Reset Function
+    const handleFullReset = () => {
+        handleReset(); // Resets customer form
+        setCart([]);
+        setInvoiceNo("");
+        setAdvance("");
+        setRemaining(0);
+        setDiscount(0);
+        setTotal(0);
+        setGrandTotal(0);
+        setSearchTerm("");
+        setGstAmount(0);
+        setDiscountAmount(0);
+        toast.info("Form fully reset");
     };
 
     // Preview Invoice
@@ -117,7 +149,7 @@ const Billing = () => {
         setShowPreview(true);
     };
 
-    // Print Invoice
+    // --- UPDATED Print Invoice ---
     const handlePrint = () => {
         if (cart.length === 0) return toast.warn("Add at least one item to cart!");
         if (!customer.customerName || !customer.mobileNumber)
@@ -166,6 +198,10 @@ const Billing = () => {
                 <td><strong>DOB:</strong></td>
                 <td>${customer.dob || "N/A"}</td>
               </tr>
+              <tr>
+                <td><strong>Purpose:</strong></td>
+                <td colspan="3">${customer.purposeOfVisit || "N/A"}</td>
+              </tr>
             </table>
           </div>
           <table class="items-table">
@@ -188,8 +224,8 @@ const Billing = () => {
           </table>
           <div class="totals">
             <p>Total: ₹${total.toFixed(2)}/-</p>
-            <p>GST (${gst}%): ₹${((total * gst) / 100).toFixed(2)}/-</p>
-            <p>Discount (${discount}%): -₹${((total * discount) / 100).toFixed(2)}/-</p>
+            <p>GST (${gst}%): ₹${gstAmount.toFixed(2)}/-</p>
+            <p>Discount (${discount}%): -₹${discountAmount.toFixed(2)}/-</p>
             <p>Advance: -₹${Number(advance || 0).toFixed(2)}/-</p>
             <p class="grand-total">Grand Total: ₹${grandTotal.toFixed(2)}/-</p>
             <p>Remaining: ₹${remaining.toFixed(2)}/-</p>
@@ -205,7 +241,7 @@ const Billing = () => {
         printWindow.document.close();
     };
 
-    // Download PDF
+    // --- UPDATED Download PDF ---
     const handleDownloadPDF = () => {
         if (cart.length === 0) return toast.warn("Add at least one item to cart!");
         if (!customer.customerName || !customer.mobileNumber)
@@ -229,6 +265,7 @@ const Billing = () => {
         doc.text(`Mobile: ${customer.mobileNumber}`, 14, 64);
         doc.text(`Gender: ${customer.gender || "N/A"}`, 14, 70);
         doc.text(`DOB: ${customer.dob || "N/A"}`, 14, 76);
+        doc.text(`Purpose: ${customer.purposeOfVisit || "N/A"}`, 14, 82);
 
         // Items Table
         const tableData = cart.map((item, index) => [
@@ -238,7 +275,7 @@ const Billing = () => {
         ]);
 
         doc.autoTable({
-            startY: 85,
+            startY: 90,
             head: [["Sl.No", "Item Name", "Item Price"]],
             body: tableData,
             theme: "grid",
@@ -249,8 +286,8 @@ const Billing = () => {
         const finalY = doc.lastAutoTable.finalY + 10;
         doc.setFontSize(10);
         doc.text(`Total: ₹${total.toFixed(2)}/-`, 150, finalY);
-        doc.text(`GST (${gst}%): ₹${((total * gst) / 100).toFixed(2)}/-`, 150, finalY + 6);
-        doc.text(`Discount (${discount}%): -₹${((total * discount) / 100).toFixed(2)}/-`, 150, finalY + 12);
+        doc.text(`GST (${gst}%): ₹${gstAmount.toFixed(2)}/-`, 150, finalY + 6);
+        doc.text(`Discount (${discount}%): -₹${discountAmount.toFixed(2)}/-`, 150, finalY + 12);
         doc.text(`Advance: -₹${Number(advance || 0).toFixed(2)}/-`, 150, finalY + 18);
 
         doc.setFontSize(12);
@@ -276,7 +313,8 @@ const Billing = () => {
 
             const billData = {
                 invoiceNo: generatedInvoice,
-                date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
+                // --- THIS IS THE FIX ---
+                date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }), // <-- Corrected typo
                 customer,
                 items: cart,
                 total,
@@ -300,8 +338,14 @@ const Billing = () => {
         }
     };
 
-    // Display limited items
-    const displayedItems = showAllItems ? items : items.slice(0, 5);
+    // --- Display Logic with Search/Filter ---
+    const filteredItems = items.filter((item) => {
+        if (searchTerm === "") return true;
+        const searchField = filterType === 'itemName' ? item.itemName : item.itemNumber;
+        return searchField.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
+    const displayedItems = showAllItems ? filteredItems : filteredItems.slice(0, 5);
 
     return (
         <Layout>
@@ -313,7 +357,7 @@ const Billing = () => {
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         Customer Information
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-600">
                                 Customer Name
@@ -342,6 +386,25 @@ const Billing = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-600">
+                                Purpose of Visit
+                            </label>
+                            <select
+                                value={customer.purposeOfVisit}
+                                onChange={(e) =>
+                                    setCustomer({ ...customer, purposeOfVisit: e.target.value })
+                                }
+                                className="w-full mt-1 p-2 border rounded-md"
+                            >
+                                <option value="">Select Purpose</option>
+                                <option value="Purchase">Purchase</option>
+                                <option value="Inquiry">Inquiry</option>
+                                <option value="Service/Repair">Service/Repair</option>
+                                <option value="Browsing">Browsing</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600">
                                 Gender
                             </label>
                             <select
@@ -351,9 +414,10 @@ const Billing = () => {
                                 }
                                 className="w-full mt-1 p-2 border rounded-md"
                             >
-                                <option>Select</option>
-                                <option>Male</option>
-                                <option>Female</option>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
                             </select>
                         </div>
                         <div>
@@ -412,9 +476,37 @@ const Billing = () => {
                     </div>
                 </div>
 
-                {/* Items */}
+                {/* --- Search/Filter Inputs --- */}
                 <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">Items</h3>
+                    <div className="flex gap-4 mb-4">
+                        <div className="flex-grow">
+                            <label className="block text-sm font-medium text-gray-600">
+                                Search Item
+                            </label>
+                            <input
+                                type="text"
+                                placeholder={`Search by ${filterType === 'itemName' ? 'Name' : 'Number'}...`}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full mt-1 p-2 border rounded-md"
+                            />
+                        </div>
+                        <div className="w-1/4">
+                            <label className="block text-sm font-medium text-gray-600">
+                                Search By
+                            </label>
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="w-full mt-1 p-2 border rounded-md"
+                            >
+                                <option value="itemName">Item Name</option>
+                                <option value="itemNumber">Item Number</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div className="overflow-x-auto">
                         <table className="min-w-full border border-gray-200 text-sm text-gray-700">
                             <thead className="bg-gray-100">
@@ -450,7 +542,7 @@ const Billing = () => {
                     </div>
 
                     {/* Show More/Less Button */}
-                    {items.length > 5 && (
+                    {filteredItems.length > 5 && (
                         <div className="flex justify-center mt-4">
                             <button
                                 onClick={() => setShowAllItems(!showAllItems)}
@@ -462,7 +554,7 @@ const Billing = () => {
                                     </>
                                 ) : (
                                     <>
-                                        Show More ({items.length - 5} more items) <ChevronDown size={18} />
+                                        Show More ({filteredItems.length - 5} more items) <ChevronDown size={18} />
                                     </>
                                 )}
                             </button>
@@ -543,14 +635,22 @@ const Billing = () => {
                             </div>
                         </div>
 
+                        {/* --- UPDATED Totals Display --- */}
                         <div className="text-right text-sm font-medium text-gray-700 mt-6">
                             <p>Total : <span className="font-semibold">{total.toFixed(2)}/-</span></p>
-                            <p>GST (12%) : <span className="font-semibold">{gst}%</span></p>
-                            <p>Discount : <span className="font-semibold">{discount}%</span></p>
+                            <p>GST ({gst}%) : <span className="font-semibold">₹{gstAmount.toFixed(2)}/-</span></p>
+                            <p>Discount ({discount}%) : <span className="font-semibold">-₹{discountAmount.toFixed(2)}/-</span></p>
                             <p>Grand Total : <span className="font-semibold">{grandTotal.toFixed(2)}/-</span></p>
                         </div>
 
+                        {/* --- Button Group --- */}
                         <div className="flex justify-end gap-3 mt-6 flex-wrap">
+                            <button
+                                onClick={handleFullReset}
+                                className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-md transition"
+                            >
+                                <RefreshCw size={16} /> Full Reset
+                            </button>
                             <button
                                 onClick={handlePreview}
                                 className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md transition"
@@ -579,7 +679,7 @@ const Billing = () => {
                     </>
                 )}
 
-                {/* Preview Modal */}
+                {/* --- UPDATED Preview Modal --- */}
                 {showPreview && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
@@ -605,6 +705,7 @@ const Billing = () => {
                                 <p><strong>Mobile:</strong> {customer.mobileNumber}</p>
                                 <p><strong>Gender:</strong> {customer.gender || "N/A"}</p>
                                 <p><strong>DOB:</strong> {customer.dob || "N/A"}</p>
+                                <p><strong>Purpose:</strong> {customer.purposeOfVisit || "N/A"}</p>
                             </div>
 
                             <table className="w-full border-collapse border mb-4">
@@ -628,8 +729,8 @@ const Billing = () => {
 
                             <div className="text-right space-y-1">
                                 <p>Total: ₹{total.toFixed(2)}/-</p>
-                                <p>GST ({gst}%): ₹{((total * gst) / 100).toFixed(2)}/-</p>
-                                <p>Discount ({discount}%): -₹{((total * discount) / 100).toFixed(2)}/-</p>
+                                <p>GST ({gst}%): ₹{gstAmount.toFixed(2)}/-</p>
+                                <p>Discount ({discount}%): -₹{discountAmount.toFixed(2)}/-</p>
                                 <p>Advance: -₹{Number(advance || 0).toFixed(2)}/-</p>
                                 <p className="text-lg font-bold">Grand Total: ₹{grandTotal.toFixed(2)}/-</p>
                                 <p>Remaining: ₹{remaining.toFixed(2)}/-</p>

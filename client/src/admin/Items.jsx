@@ -8,6 +8,8 @@ import {
     UploadCloud,
     Upload,
     XCircle,
+    ChevronDown,
+    ChevronUp,
 } from "lucide-react";
 import Layout from "../components/dashboard/Layout";
 import * as XLSX from "xlsx";
@@ -21,6 +23,8 @@ const Items = () => {
     const [items, setItems] = useState([]);
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("");
+
+    // Single Upload Fields
     const [singleUpload, setSingleUpload] = useState({
         itemNumber: "",
         itemName: "",
@@ -30,11 +34,14 @@ const Items = () => {
         stock: "",
     });
 
-    // For Edit Modal
+    // Edit Modal
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
 
-    // 🔹 Fetch all items from backend
+    // Show More / Less
+    const [showAllItems, setShowAllItems] = useState(false);
+
+    // Fetch Items
     useEffect(() => {
         const fetchItems = async () => {
             try {
@@ -48,16 +55,19 @@ const Items = () => {
         fetchItems();
     }, []);
 
-    // 🔹 Filter & Search
+    // Filtered Items
     const filteredItems = items.filter((item) => {
         const matchSearch =
             item.itemName.toLowerCase().includes(search.toLowerCase()) ||
             item.itemNumber.toLowerCase().includes(search.toLowerCase());
+
         const matchFilter = filterType ? item.itemType === filterType : true;
         return matchSearch && matchFilter;
     });
 
-    // 🔹 Single Upload (POST)
+    const displayedItems = showAllItems ? filteredItems : filteredItems.slice(0, 5);
+
+    // Add Single Item
     const handleAddItem = async () => {
         if (!singleUpload.itemNumber || !singleUpload.itemName || !singleUpload.gst)
             return toast.warn("Please fill item number, name & GST");
@@ -65,6 +75,7 @@ const Items = () => {
         try {
             const res = await axios.post(API_URL, singleUpload);
             setItems([...items, res.data]);
+
             setSingleUpload({
                 itemNumber: "",
                 itemName: "",
@@ -73,6 +84,7 @@ const Items = () => {
                 gst: "",
                 stock: "",
             });
+
             toast.success("Item added successfully");
         } catch (error) {
             console.error(error);
@@ -80,13 +92,12 @@ const Items = () => {
         }
     };
 
-    // 🔹 Open Edit Modal
+    // Edit Item
     const openEditModal = (item) => {
         setEditItem({ ...item });
         setEditModalOpen(true);
     };
 
-    // 🔹 Save Edited Item
     const handleSaveEdit = async () => {
         try {
             const updatedData = {
@@ -96,6 +107,7 @@ const Items = () => {
             };
 
             const res = await axios.put(`${API_URL}/${editItem._id}`, updatedData);
+
             setItems(items.map((it) => (it._id === editItem._id ? res.data : it)));
             setEditModalOpen(false);
             toast.success("Item updated successfully");
@@ -105,7 +117,7 @@ const Items = () => {
         }
     };
 
-    // 🔹 Delete Item (DELETE)
+    // Delete Item
     const handleDelete = async (itemId) => {
         try {
             await axios.delete(`${API_URL}/${itemId}`);
@@ -117,7 +129,7 @@ const Items = () => {
         }
     };
 
-    // 🔹 Download Sample File
+    // Download Sample File
     const handleDownloadSample = () => {
         const wb = XLSX.utils.book_new();
         const wsData = [
@@ -130,7 +142,7 @@ const Items = () => {
         XLSX.writeFile(wb, "SampleItems.xlsx");
     };
 
-    // 🔹 Bulk Upload (Excel → MongoDB)
+    // Bulk Upload
     const handleBulkUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -143,6 +155,7 @@ const Items = () => {
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
                 const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
                 const uploadedItems = data.slice(1).map((row) => ({
                     itemNumber: row[0],
                     itemName: row[1],
@@ -153,14 +166,17 @@ const Items = () => {
                 }));
 
                 await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
+
                 const res = await axios.get(API_URL);
                 setItems(res.data);
+
                 toast.success("Bulk items uploaded successfully");
             } catch (error) {
-                console.error("Error bulk uploading:", error);
-                toast.error("Error in bulk upload");
+                console.error(error);
+                toast.error("Bulk upload failed");
             }
         };
+
         reader.readAsBinaryString(file);
     };
 
@@ -169,7 +185,7 @@ const Items = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
                 <h2 className="text-2xl font-bold mb-6">Items Listing</h2>
 
-                {/* 🔍 Search & Filter */}
+                {/* Search + Filter */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="relative w-full sm:max-w-xs">
                         <input
@@ -181,9 +197,10 @@ const Items = () => {
                         />
                         <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
                     </div>
+
                     <div className="relative w-full sm:max-w-xs">
                         <select
-                            className="w-full border rounded-md pl-10 pr-3 py-2 text-sm appearance-none"
+                            className="w-full border rounded-md pl-10 pr-3 py-2 text-sm"
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
                         >
@@ -195,7 +212,7 @@ const Items = () => {
                     </div>
                 </div>
 
-                {/* 📋 Table */}
+                {/* Items Table */}
                 <div className="overflow-x-auto">
                     {filteredItems.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No items found.</div>
@@ -215,15 +232,15 @@ const Items = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredItems.map((item) => (
+                                {displayedItems.map((item) => (
                                     <tr key={item._id}>
                                         <td className="border p-2">{item.itemNumber}</td>
                                         <td className="border p-2">{item.itemName}</td>
                                         <td className="border p-2">{item.itemType}</td>
                                         <td className="border p-2">{item.itemPrice}/-</td>
                                         <td className="border p-2 text-center">{item.gst}%</td>
-                                        <td className="border p-2 text-center">{item.cgst}%</td>
-                                        <td className="border p-2 text-center">{item.sgst}%</td>
+                                        <td className="border p-2 text-center">{item.cgst || item.gst / 2}%</td>
+                                        <td className="border p-2 text-center">{item.sgst || item.gst / 2}%</td>
                                         <td className="border p-2 text-center">{item.stock}</td>
                                         <td className="border p-2 text-center flex justify-center gap-2">
                                             <button
@@ -246,7 +263,28 @@ const Items = () => {
                     )}
                 </div>
 
-                {/* ➕ Single Upload */}
+                {/* Show More / Less */}
+                {filteredItems.length > 5 && (
+                    <div className="flex justify-center mt-4">
+                        <button
+                            onClick={() => setShowAllItems(!showAllItems)}
+                            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md transition"
+                        >
+                            {showAllItems ? (
+                                <>
+                                    Show Less <ChevronUp size={18} />
+                                </>
+                            ) : (
+                                <>
+                                    Show More ({filteredItems.length - 5} more items){" "}
+                                    <ChevronDown size={18} />
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
+
+                {/* Single Upload Section */}
                 <div className="mt-8">
                     <h4 className="font-semibold text-lg mb-3">Single Upload</h4>
                     <div className="flex flex-wrap gap-3 mb-3">
@@ -278,17 +316,17 @@ const Items = () => {
                     </button>
                 </div>
 
-                {/* 📂 Bulk Upload */}
+                {/* Bulk Upload Section */}
                 <div className="mt-8 flex flex-wrap gap-5 items-center">
                     <button
                         onClick={handleDownloadSample}
-                        className="flex flex-col items-center justify-center p-4 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                        className="flex flex-col items-center p-4 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                     >
                         <DownloadCloud size={28} />
                         <span className="text-sm mt-1">Download Sample File</span>
                     </button>
 
-                    <label className="flex flex-col items-center justify-center p-4 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 cursor-pointer">
+                    <label className="flex flex-col items-center p-4 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 cursor-pointer">
                         <UploadCloud size={28} />
                         <span className="text-sm mt-1">Upload File</span>
                         <input
@@ -301,7 +339,7 @@ const Items = () => {
                 </div>
             </div>
 
-            {/* 🧩 Edit Modal */}
+            {/* Edit Modal */}
             {editModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                     <div className="bg-white p-6 rounded-lg w-[90%] max-w-md relative shadow-lg">
@@ -311,27 +349,28 @@ const Items = () => {
                         >
                             <XCircle size={22} />
                         </button>
+
                         <h3 className="text-lg font-semibold mb-4">Edit Item</h3>
+
                         <div className="grid grid-cols-2 gap-3">
-                            {[
-                                "itemNumber",
-                                "itemName",
-                                "itemType",
-                                "itemPrice",
-                                "gst",
-                                "stock",
-                            ].map((key) => (
-                                <input
-                                    key={key}
-                                    className="border rounded-md p-2 text-sm"
-                                    placeholder={key.replace("item", "Item ")}
-                                    type={key.includes("Price") || key.includes("gst") ? "number" : "text"}
-                                    value={editItem[key]}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, [key]: e.target.value })
-                                    }
-                                />
-                            ))}
+                            {["itemNumber", "itemName", "itemType", "itemPrice", "gst", "stock"].map(
+                                (key) => (
+                                    <input
+                                        key={key}
+                                        className="border rounded-md p-2 text-sm"
+                                        placeholder={key.replace("item", "Item ")}
+                                        type={
+                                            key.includes("Price") || key.includes("gst")
+                                                ? "number"
+                                                : "text"
+                                        }
+                                        value={editItem[key]}
+                                        onChange={(e) =>
+                                            setEditItem({ ...editItem, [key]: e.target.value })
+                                        }
+                                    />
+                                )
+                            )}
                         </div>
                         <button
                             className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full"
@@ -343,16 +382,7 @@ const Items = () => {
                 </div>
             )}
 
-            {/* Toast Container */}
-            <ToastContainer
-                position="top-right"
-                autoClose={2000}
-                hideProgressBar={false}
-                closeOnClick
-                pauseOnHover
-                draggable
-                theme="colored"
-            />
+            <ToastContainer position="top-right" autoClose={2000} theme="colored" />
         </Layout>
     );
 };
