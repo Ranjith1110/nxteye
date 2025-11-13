@@ -44,7 +44,7 @@ const Billing = () => {
     useEffect(() => {
         const fetchItems = async () => {
             try {
-                const res = await fetch(`${import.meta.env.VITE_APP_BASE_URL}/api/items`);
+                const res = await fetch(`${API_URL}/api/items`);
                 const data = await res.json();
                 setItems(data);
             } catch {
