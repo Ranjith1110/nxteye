@@ -16,11 +16,8 @@ const Navbar = ({ toggleSidebar }) => {
                 {/* Page Info */}
                 <div>
                     <h1 className="text-xl lg:text-2xl font-semibold text-[#03214a]">
-                        Dashboard
+                        Welcome
                     </h1>
-                    <p className="text-sm text-gray-500">
-                        Welcome, <span className="font-medium">Claudia Alves!</span>
-                    </p>
                 </div>
             </div>
 

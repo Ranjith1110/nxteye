@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Layout from "../components/dashboard/Layout";
+import { RefreshCw } from 'lucide-react';
 
 const Prescription = () => {
     const [form, setForm] = useState({
@@ -296,13 +297,14 @@ const Prescription = () => {
                 <div className="flex justify-end mt-8 gap-4">
                     <button
                         type="reset"
-                        className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-100"
+                        className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
                     >
+                        <RefreshCw size={16} />
                         Reset
                     </button>
                     <button
                         type="submit"
-                        className="px-6 py-2 bg-[#03214a] text-white rounded-md hover:bg-[#04326d]"
+                        className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full font-medium hover:bg-[#03214a] hover:text-white transition"
                     >
                         Send Report via WhatsApp
                     </button>

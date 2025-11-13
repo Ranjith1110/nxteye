@@ -444,8 +444,9 @@ const Billing = () => {
                         </button>
                         <button
                             onClick={handleReset}
-                            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
+                            className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
                         >
+                            <RefreshCw size={16} />
                             Reset
                         </button>
                     </div>
@@ -647,31 +648,31 @@ const Billing = () => {
                         <div className="flex justify-end gap-3 mt-6 flex-wrap">
                             <button
                                 onClick={handleFullReset}
-                                className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-md transition"
+                                className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-full transition"
                             >
                                 <RefreshCw size={16} /> Full Reset
                             </button>
                             <button
                                 onClick={handlePreview}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md transition"
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-full transition"
                             >
                                 Preview
                             </button>
                             <button
                                 onClick={handlePrint}
-                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition"
+                                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition"
                             >
                                 Print
                             </button>
                             <button
                                 onClick={handleDownloadPDF}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition"
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full transition"
                             >
                                 Download PDF
                             </button>
                             <button
                                 onClick={handleSubmit}
-                                className="bg-[#5ce1e6] hover:bg-[#03214a] text-[#03214a] hover:text-white px-4 py-2 rounded-md font-semibold transition"
+                                className="bg-[#5ce1e6] hover:bg-[#03214a] text-[#03214a] hover:text-white px-4 py-2 rounded-full font-semibold transition"
                             >
                                 Submit
                             </button>

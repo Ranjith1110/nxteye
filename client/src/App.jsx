@@ -6,6 +6,7 @@ import Prescription from "./admin/Prescription";
 import Billing from "./admin/Billing";
 import Items from "./admin/Items";
 import History from "./admin/History";
+import CustomerList from "./admin/CustomerList";
 
 // 🔒 Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +57,14 @@ const App = () => {
         element={
           <ProtectedRoute>
             <History />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer-list"
+        element={
+          <ProtectedRoute>
+            <CustomerList />
           </ProtectedRoute>
         }
       />

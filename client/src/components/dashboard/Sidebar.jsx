@@ -10,6 +10,7 @@ import {
     LogOut,
     HelpCircle,
     X,
+    Users
 } from "lucide-react";
 import logo from "/assets/dashboard/nxteye-logo.png";
 
@@ -27,6 +28,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: "Billing", icon: <ShoppingBag size={18} />, path: "/billing" },
         { name: "Items", icon: <FileText size={18} />, path: "/items" },
         { name: "History", icon: <Clock size={18} />, path: "/history" },
+        { name: "CustomerList", icon: <Users size={18} />, path: "/customer-list" },
     ];
 
     const bottomItems = [

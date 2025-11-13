@@ -309,7 +309,7 @@ const Items = () => {
                         ))}
                     </div>
                     <button
-                        className="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        className="inline-flex items-center bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-md hover:bg-[#03214a] hover:text-white transition"
                         onClick={handleAddItem}
                     >
                         <Upload className="mr-2" size={16} /> Upload the Data
@@ -353,27 +353,87 @@ const Items = () => {
                         <h3 className="text-lg font-semibold mb-4">Edit Item</h3>
 
                         <div className="grid grid-cols-2 gap-3">
-                            {["itemNumber", "itemName", "itemType", "itemPrice", "gst", "stock"].map(
-                                (key) => (
-                                    <input
-                                        key={key}
-                                        className="border rounded-md p-2 text-sm"
-                                        placeholder={key.replace("item", "Item ")}
-                                        type={
-                                            key.includes("Price") || key.includes("gst")
-                                                ? "number"
-                                                : "text"
-                                        }
-                                        value={editItem[key]}
-                                        onChange={(e) =>
-                                            setEditItem({ ...editItem, [key]: e.target.value })
-                                        }
-                                    />
-                                )
-                            )}
+                            {/* Item Number */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">Item Number</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="text"
+                                    value={editItem.itemNumber}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, itemNumber: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Item Name */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">Item Name</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="text"
+                                    value={editItem.itemName}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, itemName: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Item Type */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">Item Type</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="text"
+                                    value={editItem.itemType}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, itemType: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Item Price */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">Item Price</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="number"
+                                    value={editItem.itemPrice}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, itemPrice: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* GST % */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">GST %</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="number"
+                                    value={editItem.gst}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, gst: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            {/* Stock */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">Stock</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="number"
+                                    value={editItem.stock}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, stock: e.target.value })
+                                    }
+                                />
+                            </div>
                         </div>
+
                         <button
-                            className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 w-full"
+                            className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 w-full"
                             onClick={handleSaveEdit}
                         >
                             Save Changes
@@ -381,6 +441,7 @@ const Items = () => {
                     </div>
                 </div>
             )}
+
 
             <ToastContainer position="top-right" autoClose={2000} theme="colored" />
         </Layout>
