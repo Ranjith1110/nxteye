@@ -31,14 +31,16 @@ const Billing = () => {
     // Payment & Calculation Fields
     const [advance, setAdvance] = useState("");
     const [remaining, setRemaining] = useState(0);
-    const [discount, setDiscount] = useState(0);
-    const [gst, setGst] = useState(12);
-    const [total, setTotal] = useState(0);
+    const [discount, setDiscount] = useState(0); // This is now a PERCENTAGE
+    const [total, setTotal] = useState(0); // This will be SUB-TOTAL (pre-tax, pre-discount)
     const [grandTotal, setGrandTotal] = useState(0);
 
     // --- NEW State for Calculated Amounts ---
-    const [gstAmount, setGstAmount] = useState(0);
-    const [discountAmount, setDiscountAmount] = useState(0);
+    // const [gst, setGst] = useState(12); // REMOVED
+    // const [gstAmount, setGstAmount] = useState(0); // REMOVED
+    const [discountAmount, setDiscountAmount] = useState(0); // This is the calculated RUPEE amount
+    const [totalCgstAmount, setTotalCgstAmount] = useState(0); // NEW
+    const [totalSgstAmount, setTotalSgstAmount] = useState(0); // NEW
 
     // Fetch Items
     useEffect(() => {
@@ -46,7 +48,13 @@ const Billing = () => {
             try {
                 const res = await fetch(`${API_URL}/api/items`);
                 const data = await res.json();
-                setItems(data);
+                // Mocking GST data if not present, assuming items have cgst and sgst fields
+                const itemsWithGst = data.map(item => ({
+                    ...item,
+                    cgst: item.cgst || 9, // Default to 9 if not provided
+                    sgst: item.sgst || 9  // Default to 9 if not provided
+                }));
+                setItems(itemsWithGst);
             } catch {
                 toast.error("Failed to fetch items");
             }
@@ -60,7 +68,13 @@ const Billing = () => {
         if (cart.some((c) => c._id === item._id)) {
             return toast.info("Item already in cart");
         }
-        setCart([...cart, item]);
+        // Ensure item added to cart has cgst/sgst values
+        const itemToAdd = {
+            ...item,
+            cgst: item.cgst || 0,
+            sgst: item.sgst || 0
+        };
+        setCart([...cart, itemToAdd]);
         toast.success(`${item.itemName} added to cart`);
     };
 
@@ -75,28 +89,46 @@ const Billing = () => {
             setTotal(0);
             setGrandTotal(0);
             setRemaining(0);
-            setGstAmount(0); // Reset
-            setDiscountAmount(0); // Reset
+            setDiscountAmount(0);
+            setTotalCgstAmount(0);
+            setTotalSgstAmount(0);
             return;
         }
 
-        let totalAmount = cart.reduce((sum, item) => sum + Number(item.itemPrice), 0);
-        setTotal(totalAmount);
+        // 1. Calculate Subtotal and GST amounts
+        let subTotal = 0;
+        let cgstAmt = 0;
+        let sgstAmt = 0;
 
-        const calculatedGst = (totalAmount * gst) / 100;
-        const calculatedDiscount = (totalAmount * discount) / 100;
+        cart.forEach(item => {
+            const itemPrice = Number(item.itemPrice);
+            subTotal += itemPrice;
+            cgstAmt += (itemPrice * (Number(item.cgst || 0) / 100));
+            sgstAmt += (itemPrice * (Number(item.sgst || 0) / 100));
+        });
 
-        setGstAmount(calculatedGst); // Set calculated amount
-        setDiscountAmount(calculatedDiscount); // Set calculated amount
+        // 2. Calculate Total with Tax
+        const totalWithTax = subTotal + cgstAmt + sgstAmt;
 
-        const grand = totalAmount + calculatedGst - Number(advance || 0) - calculatedDiscount;
-        const remain = totalAmount - Number(advance || 0);
+        // 3. Calculate Discount Amount (based on Total *with* Tax, as requested)
+        const calculatedDiscount = (totalWithTax * (Number(discount || 0) / 100));
 
+        // 4. Calculate Grand Total and Remaining
+        const grand = totalWithTax - calculatedDiscount - Number(advance || 0);
+        // Remaining is what's left to pay *after* advance, but *before* discount is applied
+        const remain = totalWithTax - Number(advance || 0);
+
+        // 5. Set all states
+        setTotal(subTotal); // Total is now the SubTotal (sum of prices)
+        setTotalCgstAmount(cgstAmt);
+        setTotalSgstAmount(sgstAmt);
+        setDiscountAmount(calculatedDiscount);
         setGrandTotal(grand);
-        setRemaining(remain);
-    }, [cart, discount, gst, advance]);
+        setRemaining(remain < 0 ? 0 : remain); // Remaining can't be negative
 
-    // Save Customer Info Only (No changes, this logic is correct)
+    }, [cart, discount, advance]);
+
+    // Save Customer Info Only (No changes)
     const handleSaveCustomer = async () => {
         if (!customer.customerName || !customer.mobileNumber) {
             return toast.warn("Enter customer name & mobile number");
@@ -114,7 +146,7 @@ const Billing = () => {
         }
     };
 
-    // Reset Customer Info
+    // Reset Customer Info (No changes)
     const handleReset = () => {
         setCustomer({
             customerName: "",
@@ -136,12 +168,14 @@ const Billing = () => {
         setTotal(0);
         setGrandTotal(0);
         setSearchTerm("");
-        setGstAmount(0);
+        // setGstAmount(0); // REMOVED
         setDiscountAmount(0);
+        setTotalCgstAmount(0); // NEW
+        setTotalSgstAmount(0); // NEW
         toast.info("Form fully reset");
     };
 
-    // Preview Invoice
+    // Preview Invoice (No changes)
     const handlePreview = () => {
         if (cart.length === 0) return toast.warn("Add at least one item to cart!");
         if (!customer.customerName || !customer.mobileNumber)
@@ -210,25 +244,37 @@ const Billing = () => {
                 <th>Sl.No</th>
                 <th>Item Name</th>
                 <th>Item Price</th>
+                <th>CGST</th>
+                <th>SGST</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
-              ${cart.map((item, index) => `
+              ${cart.map((item, index) => {
+            const itemPrice = Number(item.itemPrice);
+            const cgst = (itemPrice * (Number(item.cgst || 0) / 100));
+            const sgst = (itemPrice * (Number(item.sgst || 0) / 100));
+            const itemTotal = itemPrice + cgst + sgst;
+            return `
                 <tr>
                   <td>${index + 1}</td>
                   <td>${item.itemName}</td>
-                  <td>₹${item.itemPrice}/-</td>
+                  <td>₹${itemPrice.toFixed(2)}/-</td>
+                  <td>₹${cgst.toFixed(2)}/- (${item.cgst || 0}%)</td>
+                  <td>₹${sgst.toFixed(2)}/- (${item.sgst || 0}%)</td>
+                  <td>₹${itemTotal.toFixed(2)}/-</td>
                 </tr>
-              `).join("")}
+              `
+        }).join("")}
             </tbody>
           </table>
           <div class="totals">
-            <p>Total: ₹${total.toFixed(2)}/-</p>
-            <p>GST (${gst}%): ₹${gstAmount.toFixed(2)}/-</p>
+            <p>Subtotal: ₹${total.toFixed(2)}/-</p>
+            <p>CGST: ₹${totalCgstAmount.toFixed(2)}/-</p>
+            <p>SGST: ₹${totalSgstAmount.toFixed(2)}/-</p>
             <p>Discount (${discount}%): -₹${discountAmount.toFixed(2)}/-</p>
             <p>Advance: -₹${Number(advance || 0).toFixed(2)}/-</p>
             <p class="grand-total">Grand Total: ₹${grandTotal.toFixed(2)}/-</p>
-            <p>Remaining: ₹${remaining.toFixed(2)}/-</p>
           </div>
           <script>
             window.onload = function() { 
@@ -252,7 +298,6 @@ const Billing = () => {
         // Header
         doc.setFontSize(20);
         doc.text("SALE INVOICE", 105, 20, { align: "center" });
-
         doc.setFontSize(10);
         doc.text(`Invoice No: ${invoiceNo || "N/A"}`, 105, 30, { align: "center" });
         doc.text(`Date: ${date}`, 105, 36, { align: "center" });
@@ -268,15 +313,24 @@ const Billing = () => {
         doc.text(`Purpose: ${customer.purposeOfVisit || "N/A"}`, 14, 82);
 
         // Items Table
-        const tableData = cart.map((item, index) => [
-            index + 1,
-            item.itemName,
-            `₹${item.itemPrice}/-`
-        ]);
+        const tableData = cart.map((item, index) => {
+            const itemPrice = Number(item.itemPrice);
+            const cgst = (itemPrice * (Number(item.cgst || 0) / 100));
+            const sgst = (itemPrice * (Number(item.sgst || 0) / 100));
+            const itemTotal = itemPrice + cgst + sgst;
+            return [
+                index + 1,
+                item.itemName,
+                `₹${itemPrice.toFixed(2)}/-`,
+                `₹${cgst.toFixed(2)}/- (${item.cgst || 0}%)`,
+                `₹${sgst.toFixed(2)}/- (${item.sgst || 0}%)`,
+                `₹${itemTotal.toFixed(2)}/-`
+            ];
+        });
 
         doc.autoTable({
             startY: 90,
-            head: [["Sl.No", "Item Name", "Item Price"]],
+            head: [["Sl.No", "Item Name", "Price", "CGST", "SGST", "Total"]],
             body: tableData,
             theme: "grid",
             headStyles: { fillColor: [92, 225, 230] }
@@ -285,21 +339,22 @@ const Billing = () => {
         // Totals
         const finalY = doc.lastAutoTable.finalY + 10;
         doc.setFontSize(10);
-        doc.text(`Total: ₹${total.toFixed(2)}/-`, 150, finalY);
-        doc.text(`GST (${gst}%): ₹${gstAmount.toFixed(2)}/-`, 150, finalY + 6);
-        doc.text(`Discount (${discount}%): -₹${discountAmount.toFixed(2)}/-`, 150, finalY + 12);
-        doc.text(`Advance: -₹${Number(advance || 0).toFixed(2)}/-`, 150, finalY + 18);
+        doc.text(`Subtotal: ₹${total.toFixed(2)}/-`, 150, finalY);
+        doc.text(`CGST: ₹${totalCgstAmount.toFixed(2)}/-`, 150, finalY + 6);
+        doc.text(`SGST: ₹${totalSgstAmount.toFixed(2)}/-`, 150, finalY + 12);
+        doc.text(`Discount (${discount}%): -₹${discountAmount.toFixed(2)}/-`, 150, finalY + 18);
+        doc.text(`Advance: -₹${Number(advance || 0).toFixed(2)}/-`, 150, finalY + 24);
 
         doc.setFontSize(12);
         doc.setFont(undefined, "bold");
-        doc.text(`Grand Total: ₹${grandTotal.toFixed(2)}/-`, 150, finalY + 26);
-        doc.text(`Remaining: ₹${remaining.toFixed(2)}/-`, 150, finalY + 34);
+        doc.text(`Grand Total: ₹${grandTotal.toFixed(2)}/-`, 150, finalY + 32);
+        // doc.text(`Remaining: ₹${remaining.toFixed(2)}/-`, 150, finalY + 34); // Remaining is less important than Grand Total
 
         doc.save(`Invoice_${invoiceNo || "Preview"}.pdf`);
         toast.success("PDF Downloaded Successfully!");
     };
 
-    // Submit Bill
+    // --- UPDATED Submit Bill ---
     const handleSubmit = async () => {
         if (cart.length === 0) return toast.warn("Add at least one item to cart!");
         if (!customer.customerName || !customer.mobileNumber)
@@ -313,16 +368,18 @@ const Billing = () => {
 
             const billData = {
                 invoiceNo: generatedInvoice,
-                // --- THIS IS THE FIX ---
-                date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }), // <-- Corrected typo
+                date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
                 customer,
                 items: cart,
-                total,
-                gst,
-                discount,
+                subTotal: total, // Renamed for clarity
+                totalCgstAmount, // NEW
+                totalSgstAmount, // NEW
+                discountPercent: discount, // NEW
+                discountAmount, // NEW
                 advance,
                 remaining,
                 grandTotal,
+                // 'gst' field removed
             };
 
             await fetch(`${API_URL}/api/billing/submit`, {
@@ -352,7 +409,7 @@ const Billing = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Sale Bill</h2>
 
-                {/* Customer Info */}
+                {/* Customer Info (No changes) */}
                 <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">
                         Customer Information
@@ -452,7 +509,7 @@ const Billing = () => {
                     </div>
                 </div>
 
-                {/* Invoice & Date */}
+                {/* Invoice & Date (No changes) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-600">
@@ -477,7 +534,7 @@ const Billing = () => {
                     </div>
                 </div>
 
-                {/* --- Search/Filter Inputs --- */}
+                {/* --- UPDATED Search/Filter Inputs & Items Table --- */}
                 <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">Items</h3>
                     <div className="flex gap-4 mb-4">
@@ -516,7 +573,8 @@ const Billing = () => {
                                     <th className="border p-2">Item Number</th>
                                     <th className="border p-2">Item Name</th>
                                     <th className="border p-2">Item Price</th>
-                                    <th className="border p-2">GST%</th>
+                                    <th className="border p-2">CGST%</th>
+                                    <th className="border p-2">SGST%</th>
                                     <th className="border p-2">Add to Cart</th>
                                 </tr>
                             </thead>
@@ -526,8 +584,9 @@ const Billing = () => {
                                         <td className="border p-2 text-center">{index + 1}</td>
                                         <td className="border p-2">{item.itemNumber}</td>
                                         <td className="border p-2">{item.itemName}</td>
-                                        <td className="border p-2 text-center">{item.itemPrice}/-</td>
-                                        <td className="border p-2 text-center">{item.gst}%</td>
+                                        <td className="border p-2 text-center">₹{item.itemPrice}/-</td>
+                                        <td className="border p-2 text-center">{item.cgst || 0}%</td>
+                                        <td className="border p-2 text-center">{item.sgst || 0}%</td>
                                         <td className="border p-2 text-center">
                                             <button
                                                 onClick={() => handleAddToCart(item)}
@@ -542,7 +601,7 @@ const Billing = () => {
                         </table>
                     </div>
 
-                    {/* Show More/Less Button */}
+                    {/* Show More/Less Button (No changes) */}
                     {filteredItems.length > 5 && (
                         <div className="flex justify-center mt-4">
                             <button
@@ -563,7 +622,7 @@ const Billing = () => {
                     )}
                 </div>
 
-                {/* Cart */}
+                {/* --- UPDATED Cart --- */}
                 {cart.length > 0 && (
                     <>
                         <div className="mt-8">
@@ -574,32 +633,44 @@ const Billing = () => {
                                         <tr>
                                             <th className="border p-2">Sl.No</th>
                                             <th className="border p-2">Item Name</th>
-                                            <th className="border p-2">Item Price</th>
+                                            <th className="border p-2">Price</th>
+                                            <th className="border p-2">CGST</th>
+                                            <th className="border p-2">SGST</th>
+                                            <th className="border p-2">Total</th>
                                             <th className="border p-2">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {cart.map((item, index) => (
-                                            <tr key={item._id}>
-                                                <td className="border p-2 text-center">{index + 1}</td>
-                                                <td className="border p-2">{item.itemName}</td>
-                                                <td className="border p-2 text-center">{item.itemPrice}/-</td>
-                                                <td className="border p-2 text-center">
-                                                    <button
-                                                        onClick={() => handleRemoveFromCart(item._id)}
-                                                        className="flex items-center justify-center bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition mx-auto"
-                                                    >
-                                                        <Trash2 size={14} className="mr-1" /> Remove
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {cart.map((item, index) => {
+                                            const itemPrice = Number(item.itemPrice);
+                                            const cgst = (itemPrice * (Number(item.cgst || 0) / 100));
+                                            const sgst = (itemPrice * (Number(item.sgst || 0) / 100));
+                                            const itemTotal = itemPrice + cgst + sgst;
+                                            return (
+                                                <tr key={item._id}>
+                                                    <td className="border p-2 text-center">{index + 1}</td>
+                                                    <td className="border p-2">{item.itemName}</td>
+                                                    <td className="border p-2 text-right">₹{itemPrice.toFixed(2)}/-</td>
+                                                    <td className="border p-2 text-right">₹{cgst.toFixed(2)}/-</td>
+                                                    <td className="border p-2 text-right">₹{sgst.toFixed(2)}/-</td>
+                                                    <td className="border p-2 text-right">₹{itemTotal.toFixed(2)}/-</td>
+                                                    <td className="border p-2 text-center">
+                                                        <button
+                                                            onClick={() => handleRemoveFromCart(item._id)}
+                                                            className="flex items-center justify-center bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition mx-auto"
+                                                        >
+                                                            <Trash2 size={14} className="mr-1" /> Remove
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
 
-                        {/* Payment & Summary */}
+                        {/* --- UPDATED Payment & Summary --- */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
                             <div>
                                 <label className="block text-sm font-medium text-gray-600">
@@ -607,20 +678,10 @@ const Billing = () => {
                                 </label>
                                 <input
                                     type="number"
+                                    placeholder="Enter advance amount"
                                     value={advance}
                                     onChange={(e) => setAdvance(e.target.value)}
                                     className="w-full mt-1 p-2 border rounded-md"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-600">
-                                    Remaining
-                                </label>
-                                <input
-                                    type="number"
-                                    value={remaining.toFixed(2)}
-                                    readOnly
-                                    className="w-full mt-1 p-2 border rounded-md bg-gray-100"
                                 />
                             </div>
                             <div>
@@ -629,22 +690,37 @@ const Billing = () => {
                                 </label>
                                 <input
                                     type="number"
+                                    placeholder="Enter discount %"
                                     value={discount}
                                     onChange={(e) => setDiscount(e.target.value)}
                                     className="w-full mt-1 p-2 border rounded-md"
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600">
+                                    Remaining (Pre-discount)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={remaining.toFixed(2)}
+                                    readOnly
+                                    className="w-full mt-1 p-2 border rounded-md bg-gray-100"
+                                />
+                            </div>
                         </div>
 
                         {/* --- UPDATED Totals Display --- */}
-                        <div className="text-right text-sm font-medium text-gray-700 mt-6">
-                            <p>Total : <span className="font-semibold">{total.toFixed(2)}/-</span></p>
-                            <p>GST ({gst}%) : <span className="font-semibold">₹{gstAmount.toFixed(2)}/-</span></p>
-                            <p>Discount ({discount}%) : <span className="font-semibold">-₹{discountAmount.toFixed(2)}/-</span></p>
-                            <p>Grand Total : <span className="font-semibold">{grandTotal.toFixed(2)}/-</span></p>
+                        <div className="text-right text-sm font-medium text-gray-700 mt-6 space-y-1">
+                            <p>Subtotal : <span className="font-semibold text-base">₹{total.toFixed(2)}/-</span></p>
+                            <p>Total CGST : <span className="font-semibold text-base">₹{totalCgstAmount.toFixed(2)}/-</span></p>
+                            <p>Total SGST : <span className="font-semibold text-base">₹{totalSgstAmount.toFixed(2)}/-</span></p>
+                            <p className="text-blue-600">Total (with Tax) : <span className="font-semibold text-base">₹{(total + totalCgstAmount + totalSgstAmount).toFixed(2)}/-</span></p>
+                            <p className="text-red-600">Discount ({discount}%) : <span className="font-semibold text-base">-₹{discountAmount.toFixed(2)}/-</span></p>
+                            <p className="text-green-600">Advance Paid : <span className="font-semibold text-base">-₹{Number(advance || 0).toFixed(2)}/-</span></p>
+                            <p className="text-xl font-bold text-black mt-2">Grand Total : <span className="font-bold">₹{grandTotal.toFixed(2)}/-</span></p>
                         </div>
 
-                        {/* --- Button Group --- */}
+                        {/* --- Button Group (No changes) --- */}
                         <div className="flex justify-end gap-3 mt-6 flex-wrap">
                             <button
                                 onClick={handleFullReset}
@@ -715,26 +791,39 @@ const Billing = () => {
                                         <th className="border p-2">Sl.No</th>
                                         <th className="border p-2">Item Name</th>
                                         <th className="border p-2">Price</th>
+                                        <th className="border p-2">CGST</th>
+                                        <th className="border p-2">SGST</th>
+                                        <th className="border p-2">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {cart.map((item, index) => (
-                                        <tr key={item._id}>
-                                            <td className="border p-2 text-center">{index + 1}</td>
-                                            <td className="border p-2">{item.itemName}</td>
-                                            <td className="border p-2 text-right">₹{item.itemPrice}/-</td>
-                                        </tr>
-                                    ))}
+                                    {cart.map((item, index) => {
+                                        const itemPrice = Number(item.itemPrice);
+                                        const cgst = (itemPrice * (Number(item.cgst || 0) / 100));
+                                        const sgst = (itemPrice * (Number(item.sgst || 0) / 100));
+                                        const itemTotal = itemPrice + cgst + sgst;
+                                        return (
+                                            <tr key={item._id}>
+                                                <td className="border p-2 text-center">{index + 1}</td>
+                                                <td className="border p-2">{item.itemName}</td>
+                                                <td className="border p-2 text-right">₹{itemPrice.toFixed(2)}/-</td>
+                                                <td className="border p-2 text-right">₹{cgst.toFixed(2)}/-</td>
+                                                <td className="border p-2 text-right">₹{sgst.toFixed(2)}/-</td>
+                                                <td className="border p-2 text-right">₹{itemTotal.toFixed(2)}/-</td>
+                                            </tr>
+                                        )
+                                    })}
                                 </tbody>
                             </table>
 
                             <div className="text-right space-y-1">
-                                <p>Total: ₹{total.toFixed(2)}/-</p>
-                                <p>GST ({gst}%): ₹{gstAmount.toFixed(2)}/-</p>
+                                <p>Subtotal: ₹{total.toFixed(2)}/-</p>
+                                <p>CGST: ₹{totalCgstAmount.toFixed(2)}/-</p>
+                                <p>SGST: ₹{totalSgstAmount.toFixed(2)}/-</p>
                                 <p>Discount ({discount}%): -₹{discountAmount.toFixed(2)}/-</p>
-                                <p>Advance: -₹{Number(advance || 0).toFixed(2)}/-</p>
+                                <p>Advance: -₹${Number(advance || 0).toFixed(2)}/-</p>
                                 <p className="text-lg font-bold">Grand Total: ₹{grandTotal.toFixed(2)}/-</p>
-                                <p>Remaining: ₹{remaining.toFixed(2)}/-</p>
+                                {/* <p>Remaining: ₹{remaining.toFixed(2)}/-</p> */}
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6">
