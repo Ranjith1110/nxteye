@@ -13,20 +13,17 @@ const billingSchema = new mongoose.Schema({
     },
     items: { type: Array, default: [] },
     
-    // --- UPDATED FIELDS ---
-    // 'total' is now 'subTotal' to match what you send
     subTotal: Number, 
-    
-    // 'gst' is removed and replaced with specific amounts
     totalCgstAmount: Number,
     totalSgstAmount: Number,
-
-    // 'discount' is now 'discountPercent' and 'discountAmount'
     discountPercent: Number, 
     discountAmount: Number,
-    // --- END UPDATED FIELDS ---
-
     advance: Number,
+
+    // --- NEW FIELD ---
+    paymentMethod: { type: String, default: 'Cash' }, // Added this line
+    // --- END NEW FIELD ---
+
     remaining: Number,
     grandTotal: Number,
     createdAt: { type: Date, default: Date.now },

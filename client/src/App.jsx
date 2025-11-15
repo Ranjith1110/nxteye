@@ -3,8 +3,9 @@ import Home from "./page/Home";
 import Login from "./page/Login";
 import Dashboard from "./admin/Dashboard";
 import Prescription from "./admin/Prescription";
-import Billing from "./admin/Billing";
 import Items from "./admin/Items";
+import Billing from "./admin/Billing";
+import Remaining from "./admin/Remaining";
 import History from "./admin/History";
 import CustomerList from "./admin/CustomerList";
 
@@ -37,6 +38,14 @@ const App = () => {
         }
       />
       <Route
+        path="/items"
+        element={
+          <ProtectedRoute>
+            <Items />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/billing"
         element={
           <ProtectedRoute>
@@ -45,10 +54,10 @@ const App = () => {
         }
       />
       <Route
-        path="/items"
+        path="/remaining"
         element={
           <ProtectedRoute>
-            <Items />
+            <Remaining />
           </ProtectedRoute>
         }
       />

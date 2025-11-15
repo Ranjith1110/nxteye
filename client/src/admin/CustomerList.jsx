@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/dashboard/Layout';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react'; // Import RefreshCw icon
+import { ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react';
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
@@ -14,18 +14,23 @@ const CustomerList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // --- State for Search and Pagination ---
+    // --- State for Search, Filters, and Pagination ---
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // --- Fetch Data Function ---
-    const fetchCustomers = async (page, search) => {
+    // --- NEW State for Filters ---
+    const [purpose, setPurpose] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+
+    // --- UPDATED Fetch Data Function ---
+    const fetchCustomers = async (page, search, purpose, startDate, endDate) => {
         setLoading(true);
         setError(null);
         try {
-            // Construct the query URL
-            const url = `${API_URL}/api/customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&search=${search}`;
+            // Construct the query URL with all filter parameters
+            const url = `${API_URL}/api/customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&search=${search}&purpose=${purpose}&startDate=${startDate}&endDate=${endDate}`;
 
             const res = await fetch(url);
             if (!res.ok) {
@@ -49,41 +54,41 @@ const CustomerList = () => {
     // --- Effects ---
     // Initial fetch on component mount
     useEffect(() => {
-        fetchCustomers(1, "");
+        // Fetch with all empty filters
+        fetchCustomers(1, "", "", "", "");
     }, []);
 
     // --- Event Handlers ---
 
-    // Handle search input change
-    const handleSearchChange = (e) => {
-        setSearchTerm(e.target.value);
+    // Handle "Apply Filters" button click
+    const handleFilterSubmit = () => {
+        setCurrentPage(1); // Reset to first page on a new filter
+        fetchCustomers(1, searchTerm, purpose, startDate, endDate);
     };
 
-    // Handle search button click
-    const handleSearchSubmit = () => {
-        setCurrentPage(1); // Reset to first page on a new search
-        fetchCustomers(1, searchTerm);
-    };
-
-    // --- NEW: Handle Reset Button Click ---
+    // --- UPDATED: Handle Reset Button Click ---
     const handleReset = () => {
         setSearchTerm("");    // Clear the search input
+        setPurpose("");
+        setStartDate("");
+        setEndDate("");
         setCurrentPage(1);  // Go back to page 1
-        fetchCustomers(1, ""); // Fetch all customers
-        toast.info("Customer list reset");
+        fetchCustomers(1, "", "", "", ""); // Fetch all customers
+        toast.info("Filters reset");
     };
 
     // Handle pressing Enter in search box
     const handleSearchKeyPress = (e) => {
         if (e.key === 'Enter') {
-            handleSearchSubmit();
+            handleFilterSubmit();
         }
     };
 
     // Handle pagination
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages) {
-            fetchCustomers(newPage, searchTerm);
+            // Fetch new page *with* all current filters
+            fetchCustomers(newPage, searchTerm, purpose, startDate, endDate);
         }
     };
 
@@ -106,26 +111,70 @@ const CustomerList = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List</h2>
 
-                {/* --- Search Bar --- */}
-                <div className="flex gap-2 mb-6">
-                    <div className="relative flex-grow">
+                {/* --- NEW Filter Bar --- */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+                    {/* Search */}
+                    <div className="relative md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-600">Search Name/Mobile</label>
                         <input
                             type="text"
-                            placeholder="Search by Name or Mobile Number..."
+                            placeholder="Search..."
                             value={searchTerm}
-                            onChange={handleSearchChange}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyPress={handleSearchKeyPress}
                             className="w-full mt-1 p-2 pl-10 border rounded-md"
                         />
-                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <Search size={18} className="absolute left-3 bottom-2.5 text-gray-400" />
                     </div>
+
+                    {/* Purpose */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-600">Purpose</label>
+                        <select
+                            value={purpose}
+                            onChange={(e) => setPurpose(e.target.value)}
+                            className="w-full mt-1 p-2 border rounded-md bg-white"
+                        >
+                            <option value="">All Purposes</option>
+                            <option value="Purchase">Purchase</option>
+                            <option value="Inquiry">Inquiry</option>
+                            <option value="Service/Repair">Service/Repair</option>
+                            <option value="Browsing">Browsing</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    {/* Start Date */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-600">From Date</label>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="w-full mt-1 p-2 border rounded-md"
+                        />
+                    </div>
+
+                    {/* End Date */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-600">To Date</label>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="w-full mt-1 p-2 border rounded-md"
+                        />
+                    </div>
+                </div>
+
+                {/* --- NEW Button Controls --- */}
+                <div className="flex justify-end gap-2 mb-6">
                     <button
-                        onClick={handleSearchSubmit}
+                        onClick={handleFilterSubmit}
                         className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-medium hover:bg-[#03214a] hover:text-white transition"
                     >
-                        Search
+                        Apply Filters
                     </button>
-                    {/* --- NEW RESET BUTTON --- */}
                     <button
                         onClick={handleReset}
                         className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
@@ -135,7 +184,7 @@ const CustomerList = () => {
                     </button>
                 </div>
 
-                {/* --- Data Display --- */}
+                {/* --- Data Display (No changes) --- */}
                 {loading ? (
                     <div className="text-center py-10">Loading customers...</div>
                 ) : error ? (
@@ -144,7 +193,7 @@ const CustomerList = () => {
                     <div className="text-center py-10 text-gray-500">No customers found.</div>
                 ) : (
                     <>
-                        {/* --- Customer Table --- */}
+                        {/* --- Customer Table (No changes) --- */}
                         <div className="overflow-x-auto">
                             <table className="min-w-full border border-gray-200 text-sm text-gray-700">
                                 <thead className="bg-gray-100">
@@ -162,7 +211,6 @@ const CustomerList = () => {
                                     {customers.map((customer, index) => (
                                         <tr key={customer._id}>
                                             <td className="border p-2 text-center">
-                                                {/* Calculate serial number based on page */}
                                                 {(currentPage - 1) * CUSTOMERS_PER_PAGE + index + 1}
                                             </td>
                                             <td className="border p-2">{customer.customerName}</td>
@@ -177,7 +225,7 @@ const CustomerList = () => {
                             </table>
                         </div>
 
-                        {/* --- Pagination Controls --- */}
+                        {/* --- Pagination Controls (No changes) --- */}
                         {totalPages > 1 && (
                             <div className="flex justify-between items-center mt-6">
                                 <button

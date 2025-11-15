@@ -35,6 +35,9 @@ const Billing = () => {
     const [total, setTotal] = useState(0); // This will be SUB-TOTAL (pre-tax, pre-discount)
     const [grandTotal, setGrandTotal] = useState(0);
 
+    // --- NEW State for Payment Method ---
+    const [paymentMethod, setPaymentMethod] = useState("Cash"); // <-- ADDED
+
     // --- NEW State for Calculated Amounts ---
     const [discountAmount, setDiscountAmount] = useState(0); // This is the calculated RUPEE amount
     const [totalCgstAmount, setTotalCgstAmount] = useState(0); // NEW
@@ -186,6 +189,7 @@ const Billing = () => {
         setAdvance("");
         setRemaining(0);
         setDiscount(0);
+        setPaymentMethod("Cash"); // <-- ADDED
         setTotal(0);
         setGrandTotal(0);
         setSearchTerm("");
@@ -254,7 +258,9 @@ const Billing = () => {
               </tr>
               <tr>
                 <td><strong>Purpose:</strong></td>
-                <td colspan="3">${customer.purposeOfVisit || "N/A"}</td>
+                <td>${customer.purposeOfVisit || "N/A"}</td>
+                <td><strong>Payment Method:</strong></td>
+                <td>${paymentMethod}</td>
               </tr>
             </table>
           </div>
@@ -331,6 +337,7 @@ const Billing = () => {
         doc.text(`Gender: ${customer.gender || "N/A"}`, 14, 70);
         doc.text(`DOB: ${customer.dob || "N/A"}`, 14, 76);
         doc.text(`Purpose: ${customer.purposeOfVisit || "N/A"}`, 14, 82);
+        doc.text(`Payment Method: ${paymentMethod}`, 14, 88); // <-- ADDED
 
         // Items Table
         const tableData = cart.map((item, index) => {
@@ -349,7 +356,7 @@ const Billing = () => {
         });
 
         doc.autoTable({
-            startY: 90,
+            startY: 96, // <-- Adjusted Y position
             head: [["Sl.No", "Item Name", "Price", "CGST", "SGST", "Total"]],
             body: tableData,
             theme: "grid",
@@ -400,6 +407,7 @@ const Billing = () => {
                 discountPercent: discount,
                 discountAmount,
                 advance,
+                paymentMethod, // <-- ADDED
                 remaining,
                 grandTotal,
             };
@@ -558,7 +566,7 @@ const Billing = () => {
                     </div>
                 </div>
 
-                {/* --- Items Table (Includes GST% columns as requested) --- */}
+                {/* --- Items Table (No changes) --- */}
                 <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">Items</h3>
                     <div className="flex gap-4 mb-4">
@@ -597,8 +605,8 @@ const Billing = () => {
                                     <th className="border p-2">Item Number</th>
                                     <th className="border p-2">Item Name</th>
                                     <th className="border p-2">Item Price</th>
-                                    <th className="border p-2">CGST%</th> {/* <-- Already here */}
-                                    <th className="border p-2">SGST%</th> {/* <-- Already here */}
+                                    <th className="border p-2">CGST%</th>
+                                    <th className="border p-2">SGST%</th>
                                     <th className="border p-2">Add to Cart</th>
                                 </tr>
                             </thead>
@@ -609,8 +617,8 @@ const Billing = () => {
                                         <td className="border p-2">{item.itemNumber}</td>
                                         <td className="border p-2">{item.itemName}</td>
                                         <td className="border p-2 text-center">₹{item.itemPrice}/-</td>
-                                        <td className="border p-2 text-center">{item.cgst || 0}%</td> {/* <-- Already here */}
-                                        <td className="border p-2 text-center">{item.sgst || 0}%</td> {/* <-- Already here */}
+                                        <td className="border p-2 text-center">{item.cgst || 0}%</td>
+                                        <td className="border p-2 text-center">{item.sgst || 0}%</td>
                                         <td className="border p-2 text-center">
                                             <button
                                                 onClick={() => handleAddToCart(item)}
@@ -625,7 +633,7 @@ const Billing = () => {
                         </table>
                     </div>
 
-                    {/* Show More/Less Button (No changes) */}
+
                     {filteredItems.length > 5 && (
                         <div className="flex justify-center mt-4">
                             <button
@@ -694,8 +702,8 @@ const Billing = () => {
                             </div>
                         </div>
 
-                        {/* --- UPDATED Payment & Summary --- */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+                        {/* --- UPDATED Payment & Summary (Added Payment Method) --- */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
                             <div>
                                 <label className="block text-sm font-medium text-gray-600">
                                     Advance
@@ -720,6 +728,22 @@ const Billing = () => {
                                     className="w-full mt-1 p-2 border rounded-md"
                                 />
                             </div>
+                            {/* --- NEW PAYMENT METHOD FIELD --- */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-600">
+                                    Payment Method
+                                </label>
+                                <select
+                                    value={paymentMethod}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className="w-full mt-1 p-2 border rounded-md"
+                                >
+                                    <option value="Cash">Cash</option>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Card">Card</option>
+                                </select>
+                            </div>
+                            {/* --- END NEW FIELD --- */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-600">
                                     Remaining (Pre-discount)
@@ -807,6 +831,7 @@ const Billing = () => {
                                 <p><strong>Gender:</strong> {customer.gender || "N/A"}</p>
                                 <p><strong>DOB:</strong> {customer.dob || "N/A"}</p>
                                 <p><strong>Purpose:</strong> {customer.purposeOfVisit || "N/A"}</p>
+                                <p><strong>Payment Method:</strong> {paymentMethod}</p> {/* <-- ADDED */}
                             </div>
 
                             <table className="w-full border-collapse border mb-4">

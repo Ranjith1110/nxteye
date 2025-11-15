@@ -22,7 +22,7 @@ router.get("/invoice", async (req, res) => {
     }
 });
 
-// ✅ POST full bill on Submit (FIXED)
+// ✅ POST full bill on Submit (FIXED & UPDATED)
 router.post("/submit", async (req, res) => {
     try {
         // --- UPDATED: Destructure the correct fields ---
@@ -31,12 +31,13 @@ router.post("/submit", async (req, res) => {
             date,
             customer,
             items,
-            subTotal, // Was 'total'
-            totalCgstAmount, // Was missing
-            totalSgstAmount, // Was missing
-            discountPercent, // Was 'discount'
-            discountAmount, // Was missing
+            subTotal, 
+            totalCgstAmount, 
+            totalSgstAmount,
+            discountPercent, 
+            discountAmount, 
             advance,
+            paymentMethod, // <-- ADDED
             remaining,
             grandTotal,
         } = req.body;
@@ -46,12 +47,13 @@ router.post("/submit", async (req, res) => {
             date,
             customer,
             items,
-            subTotal, // Was 'total'
-            totalCgstAmount, // Was 'gst'
-            totalSgstAmount, // Was missing
-            discountPercent, // Was 'discount'
-            discountAmount, // Was missing
+            subTotal, 
+            totalCgstAmount, 
+            totalSgstAmount, 
+            discountPercent, 
+            discountAmount, 
             advance,
+            paymentMethod, // <-- ADDED
             remaining,
             grandTotal,
         });
@@ -65,7 +67,7 @@ router.post("/submit", async (req, res) => {
     }
 });
 
-// --- NEW: Route to get all bills for History page ---
+// --- NEW: Route to get all bills for History page (No changes) ---
 router.get("/all", async (req, res) => {
     try {
         // Fetch all bills, sort by newest first
