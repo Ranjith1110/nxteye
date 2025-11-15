@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import Layout from "../components/dashboard/Layout";
 import { RefreshCw } from 'lucide-react';
+import { toast, ToastContainer } from "react-toastify"; // ADDED
+import "react-toastify/dist/ReactToastify.css"; // ADDED
+
+// ADDED API URL
+const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
 const Prescription = () => {
     const [form, setForm] = useState({
@@ -11,6 +16,7 @@ const Prescription = () => {
         mobile: "",
         gender: "",
         dob: "",
+        purposeOfVisit: "", // ADDED
         left: {
             SPH: "",
             CYL: "",
@@ -91,6 +97,7 @@ const Prescription = () => {
         </div>
     );
 
+    // Resets the ENTIRE form
     const handleReset = () => {
         setForm({
             date: "",
@@ -100,11 +107,75 @@ const Prescription = () => {
             mobile: "",
             gender: "",
             dob: "",
+            purposeOfVisit: "", // ADDED
             left: { SPH: "", CYL: "", AXIS: "", ADD: "", PD: "", DistanceVA: "", NearVA: "" },
             right: { SPH: "", CYL: "", AXIS: "", ADD: "", PD: "", DistanceVA: "", NearVA: "" },
         });
         setErrors({});
     };
+
+    // --- ADDED: Logic from Billing.jsx ---
+
+    // Resets ONLY the customer info fields
+    const handleResetCustomerInfo = () => {
+        setForm(prevForm => ({
+            ...prevForm,
+            name: "",
+            mobile: "",
+            gender: "",
+            dob: "",
+            purposeOfVisit: "",
+        }));
+        // Optionally clear only customer-related errors
+        setErrors(prevErrors => ({
+            ...prevErrors,
+            name: "",
+            mobile: "",
+            gender: "",
+            dob: "",
+            purposeOfVisit: ""
+        }));
+    };
+
+    // Saves ONLY the customer info
+    const handleSaveCustomer = async () => {
+        // Use form.name and form.mobile for validation
+        if (!form.name || !form.mobile) {
+            return toast.warn("Enter customer name & mobile number");
+        }
+
+        // Map form state to the customerModel schema
+        const customerData = {
+            customerName: form.name,
+            mobileNumber: form.mobile,
+            gender: form.gender,
+            dob: form.dob,
+            purposeOfVisit: form.purposeOfVisit
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/api/customers`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(customerData),
+            });
+
+            // Handle duplicate customer (from customerRoutes.js)
+            if (res.status === 409) {
+                toast.warn("Customer with this mobile number already exists.");
+            } else if (res.ok) {
+                toast.success("Customer saved successfully!");
+            } else {
+                throw new Error("Failed to save customer");
+            }
+
+        } catch (error) {
+            console.error("Save Customer Error:", error);
+            toast.error("Error saving customer info");
+        }
+    };
+    // --- END: Added Logic ---
+
 
     const validateForm = () => {
         const newErrors = {};
@@ -116,6 +187,7 @@ const Prescription = () => {
         if (form.mobile && !/^\d{10}$/.test(form.mobile)) newErrors.mobile = "Please enter a valid 10-digit number.";
         if (!form.gender) newErrors.gender = "Please select gender.";
         if (!form.dob) newErrors.dob = "Please select the date of birth.";
+        // Note: purposeOfVisit is not mandatory for the prescription report
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -158,8 +230,7 @@ const Prescription = () => {
             • Near VA: ${form.right.NearVA || "-"}
             ━━━━━━━━━━━━━━━━━━━
 
-            *Thank you for trusting NxtEye Optical!*  
-            Your vision, our care
+            *Thank you for trusting NxtEye Optical!* Your vision, our care
             _Stay Clear. Stay Confident._
             `;
 
@@ -169,12 +240,121 @@ const Prescription = () => {
 
     return (
         <Layout>
+            {/* ADDED Toast Container */}
+            <ToastContainer position="top-right" autoClose={2000} />
+
             <form
                 onSubmit={handleSubmit}
-                onReset={handleReset}
+                onReset={handleReset} // This main reset clears the whole form
                 className="bg-white shadow-md rounded-lg p-6"
             >
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Eye Checkup Entry Form</h2>
+
+
+
+                {/* Customer Info - MODIFIED WITH LABELS */}
+                <section className="mb-6">
+                    <h3 className="font-semibold text-lg mb-2">Customer Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+
+                        {/* Customer Name with Label */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Customer Name
+                            </label>
+                            <input
+                                type="text"
+                                value={form.name}
+                                onChange={e => { setForm({ ...form, name: e.target.value }); setErrors(prev => ({ ...prev, name: "" })); }}
+                                className="w-full border rounded-md px-3 py-2"
+                            />
+                            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                        </div>
+
+                        {/* Mobile Number with Label */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Mobile Number
+                            </label>
+                            <input
+                                type="text"
+                                value={form.mobile}
+                                onChange={e => { setForm({ ...form, mobile: e.target.value }); setErrors(prev => ({ ...prev, mobile: "" })); }}
+                                className="w-full border rounded-md px-3 py-2"
+                            />
+                            {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
+                        </div>
+
+                        {/* Purpose of Visit with Label */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Purpose of Visit
+                            </label>
+                            <select
+                                value={form.purposeOfVisit}
+                                onChange={e => { setForm({ ...form, purposeOfVisit: e.target.value }); setErrors(prev => ({ ...prev, purposeOfVisit: "" })); }}
+                                className="w-full border rounded-md px-3 py-2"
+                            >
+                                <option value="">Select Purpose</option>
+                                <option value="Purchase">Purchase</option>
+                                <option value="Inquiry">Inquiry</option>
+                                <option value="Service/Repair">Service/Repair</option>
+                                <option value="Browsing">Browsing</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        {/* Gender with Label */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                Gender
+                            </label>
+                            <select
+                                value={form.gender}
+                                onChange={e => { setForm({ ...form, gender: e.target.value }); setErrors(prev => ({ ...prev, gender: "" })); }}
+                                className="w-full border rounded-md px-3 py-2"
+                            >
+                                <option value="">Select Gender</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                            </select>
+                            {errors.gender && <p className="text-red-500 text-sm mt-1">{errors.gender}</p>}
+                        </div>
+
+                        {/* DOB with Label */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-600 mb-1">
+                                DOB
+                            </label>
+                            <input
+                                type="date"
+                                value={form.dob}
+                                onChange={e => { setForm({ ...form, dob: e.target.value }); setErrors(prev => ({ ...prev, dob: "" })); }}
+                                className="w-full border rounded-md px-3 py-2"
+                            />
+                            {errors.dob && <p className="text-red-500 text-sm mt-1">{errors.dob}</p>}
+                        </div>
+                    </div>
+
+                    {/* Save/Reset buttons */}
+                    <div className="flex gap-3 mt-4">
+                        <button
+                            type="button"
+                            onClick={handleSaveCustomer}
+                            className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-medium hover:bg-[#03214a] hover:text-white transition"
+                        >
+                            Save Customer
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleResetCustomerInfo}
+                            className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
+                        >
+                            <RefreshCw size={16} />
+                            Reset Info
+                        </button>
+                    </div>
+                </section>
 
                 {/* Appointment Details */}
                 <section className="mb-6">
@@ -222,57 +402,6 @@ const Prescription = () => {
                     </div>
                 </section>
 
-                {/* Customer Info */}
-                <section className="mb-6">
-                    <h3 className="font-semibold text-lg mb-2">Customer Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="Customer Name"
-                                value={form.name}
-                                onChange={e => { setForm({ ...form, name: e.target.value }); setErrors(prev => ({ ...prev, name: "" })); }}
-                                className="w-full border rounded-md px-3 py-2" // ✅ w-full added
-                            />
-                            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                        </div>
-
-                        <div>
-                            <input
-                                type="text"
-                                placeholder="Mobile Number"
-                                value={form.mobile}
-                                onChange={e => { setForm({ ...form, mobile: e.target.value }); setErrors(prev => ({ ...prev, mobile: "" })); }}
-                                className="w-full border rounded-md px-3 py-2" // ✅ w-full added
-                            />
-                            {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
-                        </div>
-
-                        <div>
-                            <select
-                                value={form.gender}
-                                onChange={e => { setForm({ ...form, gender: e.target.value }); setErrors(prev => ({ ...prev, gender: "" })); }}
-                                className="w-full border rounded-md px-3 py-2" // ✅ w-full added
-                            >
-                                <option value="">Select</option>
-                                <option>Male</option>
-                                <option>Female</option>
-                            </select>
-                            {errors.gender && <p className="text-red-500 text-sm mt-1">{errors.gender}</p>}
-                        </div>
-
-                        <div>
-                            <input
-                                type="date"
-                                value={form.dob}
-                                onChange={e => { setForm({ ...form, dob: e.target.value }); setErrors(prev => ({ ...prev, dob: "" })); }}
-                                className="w-full border rounded-md px-3 py-2" // ✅ w-full added
-                            />
-                            {errors.dob && <p className="text-red-500 text-sm mt-1">{errors.dob}</p>}
-                        </div>
-                    </div>
-                </section>
-
 
                 {/* Eye Test Readings */}
                 <section>
@@ -293,17 +422,17 @@ const Prescription = () => {
                     </div>
                 </section>
 
-                {/* Buttons */}
+                {/* Main Form Buttons */}
                 <div className="flex justify-end mt-8 gap-4">
                     <button
-                        type="reset"
+                        type="reset" // This button triggers the main form onReset
                         className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
                     >
                         <RefreshCw size={16} />
-                        Reset
+                        Reset Full Form
                     </button>
                     <button
-                        type="submit"
+                        type="submit" // This button triggers the main form onSubmit
                         className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full font-medium hover:bg-[#03214a] hover:text-white transition"
                     >
                         Send Report via WhatsApp

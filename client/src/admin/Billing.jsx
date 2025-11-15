@@ -36,8 +36,6 @@ const Billing = () => {
     const [grandTotal, setGrandTotal] = useState(0);
 
     // --- NEW State for Calculated Amounts ---
-    // const [gst, setGst] = useState(12); // REMOVED
-    // const [gstAmount, setGstAmount] = useState(0); // REMOVED
     const [discountAmount, setDiscountAmount] = useState(0); // This is the calculated RUPEE amount
     const [totalCgstAmount, setTotalCgstAmount] = useState(0); // NEW
     const [totalSgstAmount, setTotalSgstAmount] = useState(0); // NEW
@@ -63,11 +61,34 @@ const Billing = () => {
         setDate(new Date().toLocaleString());
     }, []);
 
-    // Add to Cart
-    const handleAddToCart = (item) => {
+    // --- NEW: Helper function to fetch invoice number ---
+    const fetchInvoiceNumber = async () => {
+        // Only fetch if invoiceNo is not already set
+        if (invoiceNo) return invoiceNo;
+
+        try {
+            const res = await fetch(`${API_URL}/api/billing/invoice`);
+            const data = await res.json();
+            setInvoiceNo(data.invoiceNo); // Set in state
+            return data.invoiceNo;
+        } catch (error) {
+            console.error("Failed to fetch invoice number:", error);
+            toast.error("Error generating invoice number");
+            return null;
+        }
+    };
+
+    // --- UPDATED: Add to Cart ---
+    const handleAddToCart = async (item) => {
         if (cart.some((c) => c._id === item._id)) {
             return toast.info("Item already in cart");
         }
+
+        // --- NEW: Fetch invoice number on first item add ---
+        // This will only run if invoiceNo is currently ""
+        await fetchInvoiceNumber();
+        // --- End New ---
+
         // Ensure item added to cart has cgst/sgst values
         const itemToAdd = {
             ...item,
@@ -157,21 +178,20 @@ const Billing = () => {
         });
     };
 
-    // Full Reset Function
+    // --- UPDATED Full Reset Function ---
     const handleFullReset = () => {
         handleReset(); // Resets customer form
         setCart([]);
-        setInvoiceNo("");
+        setInvoiceNo(""); // <-- This is important
         setAdvance("");
         setRemaining(0);
         setDiscount(0);
         setTotal(0);
         setGrandTotal(0);
         setSearchTerm("");
-        // setGstAmount(0); // REMOVED
         setDiscountAmount(0);
-        setTotalCgstAmount(0); // NEW
-        setTotalSgstAmount(0); // NEW
+        setTotalCgstAmount(0);
+        setTotalSgstAmount(0);
         toast.info("Form fully reset");
     };
 
@@ -348,7 +368,6 @@ const Billing = () => {
         doc.setFontSize(12);
         doc.setFont(undefined, "bold");
         doc.text(`Grand Total: ₹${grandTotal.toFixed(2)}/-`, 150, finalY + 32);
-        // doc.text(`Remaining: ₹${remaining.toFixed(2)}/-`, 150, finalY + 34); // Remaining is less important than Grand Total
 
         doc.save(`Invoice_${invoiceNo || "Preview"}.pdf`);
         toast.success("PDF Downloaded Successfully!");
@@ -361,25 +380,28 @@ const Billing = () => {
             return toast.warn("Please fill customer info first");
 
         try {
-            const res = await fetch(`${API_URL}/api/billing/invoice`);
-            const data = await res.json();
-            const generatedInvoice = data.invoiceNo;
-            setInvoiceNo(generatedInvoice);
+            // This will get the existing invoiceNo from state,
+            // or fetch a new one if state is empty.
+            const currentInvoiceNo = await fetchInvoiceNumber();
+
+            // If it failed to fetch, stop here.
+            if (!currentInvoiceNo) {
+                return toast.error("Could not generate invoice number. Please try again.");
+            }
 
             const billData = {
-                invoiceNo: generatedInvoice,
+                invoiceNo: currentInvoiceNo, // Use the fetched/existing number
                 date: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
                 customer,
                 items: cart,
-                subTotal: total, // Renamed for clarity
-                totalCgstAmount, // NEW
-                totalSgstAmount, // NEW
-                discountPercent: discount, // NEW
-                discountAmount, // NEW
+                subTotal: total,
+                totalCgstAmount,
+                totalSgstAmount,
+                discountPercent: discount,
+                discountAmount,
                 advance,
                 remaining,
                 grandTotal,
-                // 'gst' field removed
             };
 
             await fetch(`${API_URL}/api/billing/submit`, {
@@ -388,7 +410,9 @@ const Billing = () => {
                 body: JSON.stringify(billData)
             });
 
-            toast.success(`Bill submitted successfully (Invoice: ${generatedInvoice})`);
+            toast.success(`Bill submitted successfully (Invoice: ${currentInvoiceNo})`);
+            handleFullReset(); // <-- NEW: Reset form on successful submit
+
         } catch (error) {
             console.error("Submit Bill Error:", error);
             toast.error("Failed to submit bill");
@@ -497,19 +521,19 @@ const Billing = () => {
                             onClick={handleSaveCustomer}
                             className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-medium hover:bg-[#03214a] hover:text-white transition"
                         >
-                            Save
+                            Save Customer
                         </button>
                         <button
                             onClick={handleReset}
                             className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
                         >
                             <RefreshCw size={16} />
-                            Reset
+                            Reset Info
                         </button>
                     </div>
                 </div>
 
-                {/* Invoice & Date (No changes) */}
+                {/* --- UPDATED Invoice & Date --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-600">
@@ -519,7 +543,7 @@ const Billing = () => {
                             type="text"
                             value={invoiceNo}
                             readOnly
-                            placeholder="Will generate on Submit"
+                            placeholder="Generates when item is added to cart" // <-- Updated placeholder
                             className="w-full mt-1 p-2 border rounded-md bg-gray-100"
                         />
                     </div>
@@ -534,7 +558,7 @@ const Billing = () => {
                     </div>
                 </div>
 
-                {/* --- UPDATED Search/Filter Inputs & Items Table --- */}
+                {/* --- Items Table (Includes GST% columns as requested) --- */}
                 <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-700 mb-2">Items</h3>
                     <div className="flex gap-4 mb-4">
@@ -573,8 +597,8 @@ const Billing = () => {
                                     <th className="border p-2">Item Number</th>
                                     <th className="border p-2">Item Name</th>
                                     <th className="border p-2">Item Price</th>
-                                    <th className="border p-2">CGST%</th>
-                                    <th className="border p-2">SGST%</th>
+                                    <th className="border p-2">CGST%</th> {/* <-- Already here */}
+                                    <th className="border p-2">SGST%</th> {/* <-- Already here */}
                                     <th className="border p-2">Add to Cart</th>
                                 </tr>
                             </thead>
@@ -585,8 +609,8 @@ const Billing = () => {
                                         <td className="border p-2">{item.itemNumber}</td>
                                         <td className="border p-2">{item.itemName}</td>
                                         <td className="border p-2 text-center">₹{item.itemPrice}/-</td>
-                                        <td className="border p-2 text-center">{item.cgst || 0}%</td>
-                                        <td className="border p-2 text-center">{item.sgst || 0}%</td>
+                                        <td className="border p-2 text-center">{item.cgst || 0}%</td> {/* <-- Already here */}
+                                        <td className="border p-2 text-center">{item.sgst || 0}%</td> {/* <-- Already here */}
                                         <td className="border p-2 text-center">
                                             <button
                                                 onClick={() => handleAddToCart(item)}
@@ -823,7 +847,6 @@ const Billing = () => {
                                 <p>Discount ({discount}%): -₹{discountAmount.toFixed(2)}/-</p>
                                 <p>Advance: -₹${Number(advance || 0).toFixed(2)}/-</p>
                                 <p className="text-lg font-bold">Grand Total: ₹{grandTotal.toFixed(2)}/-</p>
-                                {/* <p>Remaining: ₹{remaining.toFixed(2)}/-</p> */}
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6">
