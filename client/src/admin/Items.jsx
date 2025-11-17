@@ -30,6 +30,7 @@ const Items = () => {
         itemName: "",
         itemType: "",
         itemPrice: "",
+        hsn: "",
         gst: "",
         stock: "",
     });
@@ -42,16 +43,17 @@ const Items = () => {
     const [showAllItems, setShowAllItems] = useState(false);
 
     // Fetch Items
+    const fetchItems = async () => {
+        try {
+            const res = await axios.get(API_URL);
+            setItems(res.data);
+        } catch (error) {
+            console.error("Error fetching items:", error);
+            toast.error("Error connecting to server");
+        }
+    };
+
     useEffect(() => {
-        const fetchItems = async () => {
-            try {
-                const res = await axios.get(API_URL);
-                setItems(res.data);
-            } catch (error) {
-                console.error("Error fetching items:", error);
-                toast.error("Error connecting to server");
-            }
-        };
         fetchItems();
     }, []);
 
@@ -74,13 +76,15 @@ const Items = () => {
 
         try {
             const res = await axios.post(API_URL, singleUpload);
-            setItems([...items, res.data]);
+            // Add new item to top of list
+            setItems([res.data, ...items]);
 
             setSingleUpload({
                 itemNumber: "",
                 itemName: "",
                 itemType: "",
                 itemPrice: "",
+                hsn: "",
                 gst: "",
                 stock: "",
             });
@@ -88,7 +92,8 @@ const Items = () => {
             toast.success("Item added successfully");
         } catch (error) {
             console.error(error);
-            toast.error("Error adding item");
+            // Display the specific error from backend (e.g. "Item Number already exists")
+            toast.error(error.response?.data?.message || "Error adding item");
         }
     };
 
@@ -113,12 +118,14 @@ const Items = () => {
             toast.success("Item updated successfully");
         } catch (error) {
             console.error(error);
-            toast.error("Error updating item");
+            toast.error(error.response?.data?.message || "Error updating item");
         }
     };
 
     // Delete Item
     const handleDelete = async (itemId) => {
+        if (!window.confirm("Are you sure you want to delete this item?")) return;
+
         try {
             await axios.delete(`${API_URL}/${itemId}`);
             setItems(items.filter((item) => item._id !== itemId));
@@ -129,13 +136,16 @@ const Items = () => {
         }
     };
 
-    // Download Sample File
+    // Download Sample File (Use Random Numbers to avoid collision)
     const handleDownloadSample = () => {
         const wb = XLSX.utils.book_new();
+        const rand1 = Math.floor(Math.random() * 1000);
+        const rand2 = Math.floor(Math.random() * 1000);
+
         const wsData = [
-            ["Item Number", "Item Name", "Item Type", "Item Price", "GST%", "Stock"],
-            ["nxteye-003", "Example Frame", "Frame", 1500, 12, 20],
-            ["nxteye-004", "Example Lens", "Lens", 800, 5, 10],
+            ["Item Number", "Item Name", "Item Type", "Item Price", "HSN Code", "GST%", "Stock"],
+            [`nxteye-${rand1}`, "Example Frame", "Frame", 1500, "9003", 12, 20],
+            [`nxteye-${rand2}`, "Example Lens", "Lens", 800, "9001", 5, 10],
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, "SampleItems");
@@ -156,24 +166,37 @@ const Items = () => {
                 const ws = wb.Sheets[wsname];
                 const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-                const uploadedItems = data.slice(1).map((row) => ({
-                    itemNumber: row[0],
-                    itemName: row[1],
-                    itemType: row[2],
-                    itemPrice: Number(row[3] || 0),
-                    gst: Number(row[4] || 0),
-                    stock: Number(row[5] || 0),
-                }));
+                // Skip header row and filter empty rows
+                const uploadedItems = data
+                    .slice(1)
+                    .filter(row => row[0] && row[1])
+                    .map((row) => ({
+                        itemNumber: String(row[0]),
+                        itemName: String(row[1]),
+                        itemType: String(row[2] || "General"),
+                        itemPrice: Number(row[3] || 0),
+                        hsn: row[4] ? String(row[4]) : "",
+                        gst: Number(row[5] || 0),
+                        stock: Number(row[6] || 0),
+                    }));
 
-                await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
+                if (uploadedItems.length === 0) {
+                    return toast.warn("No valid data found in file");
+                }
 
-                const res = await axios.get(API_URL);
-                setItems(res.data);
+                const res = await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
 
-                toast.success("Bulk items uploaded successfully");
+                // Refresh list
+                await fetchItems();
+
+                // Show specific message (success or partial success)
+                toast.success(res.data.message || "Bulk upload successful");
+
+                e.target.value = null;
+
             } catch (error) {
                 console.error(error);
-                toast.error("Bulk upload failed");
+                toast.error(error.response?.data?.message || "Bulk upload failed");
             }
         };
 
@@ -213,36 +236,38 @@ const Items = () => {
                 </div>
 
                 {/* Items Table */}
-                <div className="overflow-x-auto">
+                <div className="mt-4 overflow-x-auto rounded-t-lg border border-gray-200">
                     {filteredItems.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No items found.</div>
                     ) : (
-                        <table className="min-w-full border bg-white rounded-lg text-sm">
-                            <thead>
+                        <table className="min-w-full text-sm text-left text-gray-700">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-100">
                                 <tr className="bg-gray-100">
-                                    <th className="p-2 border text-left">Item Number</th>
-                                    <th className="p-2 border text-left">Item Name</th>
-                                    <th className="p-2 border text-left">Item Type</th>
-                                    <th className="p-2 border text-left">Item Price</th>
-                                    <th className="p-2 border text-center">GST%</th>
-                                    <th className="p-2 border text-center">CGST%</th>
-                                    <th className="p-2 border text-center">SGST%</th>
-                                    <th className="p-2 border text-center">Stock</th>
-                                    <th className="p-2 border text-center">Actions</th>
+                                    <th className="px-4 py-3 border-b text-left">Item Number</th>
+                                    <th className="px-4 py-3 border-b text-left">Item Name</th>
+                                    <th className="px-4 py-3 border-b text-left">Item Type</th>
+                                    <th className="px-4 py-3 border-b text-left">Item Price</th>
+                                    <th className="px-4 py-3 border-b text-left">HSN</th>
+                                    <th className="px-4 py-3 border-b text-center">GST%</th>
+                                    <th className="px-4 py-3 border-b text-center">CGST%</th>
+                                    <th className="px-4 py-3 border-b text-center">SGST%</th>
+                                    <th className="px-4 py-3 border-b text-center">Stock</th>
+                                    <th className="px-4 py-3 border-b text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {displayedItems.map((item) => (
-                                    <tr key={item._id}>
-                                        <td className="border p-2">{item.itemNumber}</td>
-                                        <td className="border p-2">{item.itemName}</td>
-                                        <td className="border p-2">{item.itemType}</td>
-                                        <td className="border p-2">{item.itemPrice}/-</td>
-                                        <td className="border p-2 text-center">{item.gst}%</td>
-                                        <td className="border p-2 text-center">{item.cgst || item.gst / 2}%</td>
-                                        <td className="border p-2 text-center">{item.sgst || item.gst / 2}%</td>
-                                        <td className="border p-2 text-center">{item.stock}</td>
-                                        <td className="border p-2 text-center flex justify-center gap-2">
+                                    <tr className="bg-white border-b hover:bg-gray-50" key={item._id}>
+                                        <td className="px-4 py-3">{item.itemNumber}</td>
+                                        <td className="px-4 py-3">{item.itemName}</td>
+                                        <td className="px-4 py-3">{item.itemType}</td>
+                                        <td className="px-4 py-3">{item.itemPrice}/-</td>
+                                        <td className="px-4 py-3">{item.hsn || "-"}</td>
+                                        <td className="px-4 py-3 text-center">{item.gst}%</td>
+                                        <td className="px-4 py-3 text-center">{item.cgst || item.gst / 2}%</td>
+                                        <td className="px-4 py-3 text-center">{item.sgst || item.gst / 2}%</td>
+                                        <td className="px-4 py-3 text-center">{item.stock}</td>
+                                        <td className="px-4 py-3 text-center flex justify-center gap-2">
                                             <button
                                                 onClick={() => openEditModal(item)}
                                                 className="p-1 rounded hover:bg-gray-100"
@@ -293,6 +318,7 @@ const Items = () => {
                             { key: "itemName", placeholder: "Item Name" },
                             { key: "itemType", placeholder: "Item Type" },
                             { key: "itemPrice", placeholder: "Item Price", type: "number" },
+                            { key: "hsn", placeholder: "HSN Code" },
                             { key: "gst", placeholder: "GST %", type: "number" },
                             { key: "stock", placeholder: "Stock", type: "number" },
                         ].map(({ key, placeholder, type }) => (
@@ -353,7 +379,6 @@ const Items = () => {
                         <h3 className="text-lg font-semibold mb-4">Edit Item</h3>
 
                         <div className="grid grid-cols-2 gap-3">
-                            {/* Item Number */}
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Number</label>
                                 <input
@@ -365,8 +390,6 @@ const Items = () => {
                                     }
                                 />
                             </div>
-
-                            {/* Item Name */}
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Name</label>
                                 <input
@@ -378,8 +401,6 @@ const Items = () => {
                                     }
                                 />
                             </div>
-
-                            {/* Item Type */}
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Type</label>
                                 <input
@@ -391,8 +412,6 @@ const Items = () => {
                                     }
                                 />
                             </div>
-
-                            {/* Item Price */}
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Price</label>
                                 <input
@@ -404,8 +423,17 @@ const Items = () => {
                                     }
                                 />
                             </div>
-
-                            {/* GST % */}
+                            <div>
+                                <label className="text-xs text-gray-600 font-medium">HSN Code</label>
+                                <input
+                                    className="border rounded-md p-2 text-sm w-full mt-1"
+                                    type="text"
+                                    value={editItem.hsn || ""}
+                                    onChange={(e) =>
+                                        setEditItem({ ...editItem, hsn: e.target.value })
+                                    }
+                                />
+                            </div>
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">GST %</label>
                                 <input
@@ -417,8 +445,6 @@ const Items = () => {
                                     }
                                 />
                             </div>
-
-                            {/* Stock */}
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Stock</label>
                                 <input
@@ -441,7 +467,6 @@ const Items = () => {
                     </div>
                 </div>
             )}
-
 
             <ToastContainer position="top-right" autoClose={2000} theme="colored" />
         </Layout>

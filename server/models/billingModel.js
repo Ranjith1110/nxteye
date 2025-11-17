@@ -9,6 +9,7 @@ const billingSchema = new mongoose.Schema({
         mobileNumber: String,
         gender: String,
         dob: String,
+        address: String, // <--- Added Address Field
         purposeOfVisit: String,
     },
     items: { type: Array, default: [] },
@@ -19,11 +20,7 @@ const billingSchema = new mongoose.Schema({
     discountPercent: Number, 
     discountAmount: Number,
     advance: Number,
-
-    // --- NEW FIELD ---
-    paymentMethod: { type: String, default: 'Cash' }, // Added this line
-    // --- END NEW FIELD ---
-
+    paymentMethod: { type: String, default: 'Cash' },
     remaining: Number,
     grandTotal: Number,
     createdAt: { type: Date, default: Date.now },

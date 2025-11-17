@@ -1,83 +1,19 @@
-// billingRoutes.js
 import express from "express";
-import Billing from "../models/billingModel.js";
+import { 
+    getInvoiceNumber, 
+    submitBill, 
+    getAllBills 
+} from "../controllers/billingController.js";
 
 const router = express.Router();
 
-// ✅ Generate invoice number (No changes)
-const generateInvoiceNumber = async () => {
-    const count = await Billing.countDocuments();
-    const nextNum = (count + 1).toString().padStart(4, "0");
-    return `NE-${nextNum}`;
-};
+// Route to get the next invoice number
+router.get("/invoice", getInvoiceNumber);
 
-// ✅ GET invoice number (No changes)
-router.get("/invoice", async (req, res) => {
-    try {
-        const invoiceNo = await generateInvoiceNumber();
-        res.json({ invoiceNo });
-    } catch (error) {
-        console.error("Invoice Generation Error:", error);
-        res.status(500).json({ message: "Error generating invoice number" });
-    }
-});
+// Route to submit a new bill
+router.post("/submit", submitBill);
 
-// ✅ POST full bill on Submit (FIXED & UPDATED)
-router.post("/submit", async (req, res) => {
-    try {
-        // --- UPDATED: Destructure the correct fields ---
-        const {
-            invoiceNo,
-            date,
-            customer,
-            items,
-            subTotal, 
-            totalCgstAmount, 
-            totalSgstAmount,
-            discountPercent, 
-            discountAmount, 
-            advance,
-            paymentMethod, // <-- ADDED
-            remaining,
-            grandTotal,
-        } = req.body;
-
-        const billing = new Billing({
-            invoiceNo,
-            date,
-            customer,
-            items,
-            subTotal, 
-            totalCgstAmount, 
-            totalSgstAmount, 
-            discountPercent, 
-            discountAmount, 
-            advance,
-            paymentMethod, // <-- ADDED
-            remaining,
-            grandTotal,
-        });
-        // --- END UPDATED ---
-
-        await billing.save();
-        res.status(201).json({ message: "Bill saved successfully", billing });
-    } catch (error) {
-        console.error("Bill Submit Error:", error);
-        res.status(500).json({ message: "Error saving bill" });
-    }
-});
-
-// --- NEW: Route to get all bills for History page (No changes) ---
-router.get("/all", async (req, res) => {
-    try {
-        // Fetch all bills, sort by newest first
-        const bills = await Billing.find({}).sort({ createdAt: -1 });
-        res.json(bills);
-    } catch (error) {
-        console.error("Error fetching bills:", error);
-        res.status(500).json({ message: "Error fetching bill history" });
-    }
-});
-// --- END NEW ---
+// Route to get all bills (for history)
+router.get("/all", getAllBills);
 
 export default router;

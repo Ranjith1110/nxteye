@@ -6,6 +6,7 @@ const itemSchema = new mongoose.Schema(
     itemName: { type: String, required: true },
     itemType: { type: String, required: true },
     itemPrice: { type: Number, required: true },
+    hsn: { type: String, required: false }, // Added HSN
     gst: { type: Number, required: true },
     cgst: { type: Number, required: true },
     sgst: { type: Number, required: true },

@@ -6,6 +6,7 @@ const customerSchema = new mongoose.Schema({
     mobileNumber: { type: String, required: true },
     gender: { type: String },
     dob: { type: String },
+    address: { type: String }, // <--- Added Address Field
     purposeOfVisit: { type: String },
     createdAt: { type: Date, default: Date.now },
 });

@@ -1,4 +1,3 @@
-// CustomerList.jsx
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/dashboard/Layout';
 import { toast, ToastContainer } from 'react-toastify';
@@ -19,12 +18,12 @@ const CustomerList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // --- NEW State for Filters ---
+    // --- State for Filters ---
     const [purpose, setPurpose] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
-    // --- UPDATED Fetch Data Function ---
+    // --- Fetch Data Function ---
     const fetchCustomers = async (page, search, purpose, startDate, endDate) => {
         setLoading(true);
         setError(null);
@@ -54,7 +53,6 @@ const CustomerList = () => {
     // --- Effects ---
     // Initial fetch on component mount
     useEffect(() => {
-        // Fetch with all empty filters
         fetchCustomers(1, "", "", "", "");
     }, []);
 
@@ -66,7 +64,7 @@ const CustomerList = () => {
         fetchCustomers(1, searchTerm, purpose, startDate, endDate);
     };
 
-    // --- UPDATED: Handle Reset Button Click ---
+    // Handle Reset Button Click
     const handleReset = () => {
         setSearchTerm("");    // Clear the search input
         setPurpose("");
@@ -111,7 +109,7 @@ const CustomerList = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List</h2>
 
-                {/* --- NEW Filter Bar --- */}
+                {/* --- Filter Bar --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
                     {/* Search */}
                     <div className="relative md:col-span-2">
@@ -167,7 +165,7 @@ const CustomerList = () => {
                     </div>
                 </div>
 
-                {/* --- NEW Button Controls --- */}
+                {/* --- Button Controls --- */}
                 <div className="flex justify-end gap-2 mb-6">
                     <button
                         onClick={handleFilterSubmit}
@@ -184,7 +182,7 @@ const CustomerList = () => {
                     </button>
                 </div>
 
-                {/* --- Data Display (No changes) --- */}
+                {/* --- Data Display --- */}
                 {loading ? (
                     <div className="text-center py-10">Loading customers...</div>
                 ) : error ? (
@@ -193,39 +191,41 @@ const CustomerList = () => {
                     <div className="text-center py-10 text-gray-500">No customers found.</div>
                 ) : (
                     <>
-                        {/* --- Customer Table (No changes) --- */}
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full border border-gray-200 text-sm text-gray-700">
-                                <thead className="bg-gray-100">
+                        {/* --- Customer Table --- */}
+                        <div className="mt-4 overflow-x-auto rounded-t-lg border border-gray-200">
+                            <table className="min-w-full text-sm text-left text-gray-700">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-100">
                                     <tr>
-                                        <th className="border p-2">Sl.No</th>
-                                        <th className="border p-2 text-left">Name</th>
-                                        <th className="border p-2 text-left">Mobile Number</th>
-                                        <th className="border p-2">Gender</th>
-                                        <th className="border p-2">DOB</th>
-                                        <th className="border p-2 text-left">Purpose of Visit</th>
-                                        <th className="border p-2">Date Joined</th>
+                                        <th className="px-4 py-3 border-b">Sl.No</th>
+                                        <th className="px-4 py-3 border-b">Name</th>
+                                        <th className="px-4 py-3 border-b">Mobile Number</th>
+                                        <th className="px-4 py-3 border-b">Address</th> {/* Added Address Header */}
+                                        <th className="px-4 py-3 border-b">Gender</th>
+                                        <th className="px-4 py-3 border-b">DOB</th>
+                                        <th className="px-4 py-3 border-b">Purpose of Visit</th>
+                                        <th className="px-4 py-3 border-b">Date Joined</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {customers.map((customer, index) => (
-                                        <tr key={customer._id}>
-                                            <td className="border p-2 text-center">
+                                        <tr key={customer._id} className="bg-white border-b hover:bg-gray-50">
+                                            <td className="px-4 py-3 text-center">
                                                 {(currentPage - 1) * CUSTOMERS_PER_PAGE + index + 1}
                                             </td>
-                                            <td className="border p-2">{customer.customerName}</td>
-                                            <td className="border p-2">{customer.mobileNumber}</td>
-                                            <td className="border p-2 text-center">{customer.gender || "N/A"}</td>
-                                            <td className="border p-2 text-center">{formatDate(customer.dob)}</td>
-                                            <td className="border p-2">{customer.purposeOfVisit || "N/A"}</td>
-                                            <td className="border p-2 text-center">{formatDate(customer.createdAt)}</td>
+                                            <td className="p-2">{customer.customerName}</td>
+                                            <td className="p-4">{customer.mobileNumber}</td>
+                                            <td className="p-4">{customer.address || "N/A"}</td> {/* Added Address Data */}
+                                            <td className="p-4 text-left">{customer.gender || "N/A"}</td>
+                                            <td className="p-4 text-left">{formatDate(customer.dob)}</td>
+                                            <td className="p-4">{customer.purposeOfVisit || "N/A"}</td>
+                                            <td className="p-4 text-left">{formatDate(customer.createdAt)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* --- Pagination Controls (No changes) --- */}
+                        {/* --- Pagination Controls --- */}
                         {totalPages > 1 && (
                             <div className="flex justify-between items-center mt-6">
                                 <button

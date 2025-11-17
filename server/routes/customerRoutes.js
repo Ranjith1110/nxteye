@@ -1,18 +1,16 @@
 // customerRoutes.js
 import express from "express";
-import Customer from "../models/customerModel.js"; // Import the model
+import Customer from "../models/customerModel.js";
 
 const router = express.Router();
 
-// --- UPDATED: GET all customers with search, filter, and pagination ---
+// --- GET all customers with search, filter, and pagination ---
 router.get("/", async (req, res) => {
     try {
-        // --- Pagination ---
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 15; // Default to 15 per page
+        const limit = parseInt(req.query.limit) || 15;
         const skip = (page - 1) * limit;
 
-        // --- Filters ---
         const searchTerm = req.query.search || "";
         const purpose = req.query.purpose || "";
         const startDate = req.query.startDate;
@@ -20,47 +18,34 @@ router.get("/", async (req, res) => {
 
         let query = {};
 
-        // 1. Search Filter
         if (searchTerm) {
             query.$or = [
-                // Search by name (case-insensitive)
                 { customerName: { $regex: searchTerm, $options: "i" } },
-                // Search by mobile number (partial match)
                 { mobileNumber: { $regex: searchTerm } }
             ];
         }
 
-        // 2. Purpose Filter
         if (purpose) {
             query.purposeOfVisit = purpose;
         }
 
-        // 3. Date Range Filter
         if (startDate && endDate) {
             try {
                 const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0); // Start of the day
-
+                start.setHours(0, 0, 0, 0);
                 const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999); // End of the day
-
-                query.createdAt = {
-                    $gte: start,
-                    $lte: end
-                };
+                end.setHours(23, 59, 59, 999);
+                query.createdAt = { $gte: start, $lte: end };
             } catch (e) {
                 console.error("Invalid date format provided");
-                // Do not add date filter if format is invalid
             }
         }
 
-        // Fetch customers with combined query
         const customers = await Customer.find(query)
-            .sort({ createdAt: -1 }) // Show newest customers first
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
 
-        // Get total count of documents matching the *same* query
         const totalCustomers = await Customer.countDocuments(query);
         const totalPages = Math.ceil(totalCustomers / limit);
 
@@ -77,11 +62,11 @@ router.get("/", async (req, res) => {
     }
 });
 
-
-// --- EXISTING: POST a new customer (No changes) ---
+// --- POST a new customer (Updated with Address) ---
 router.post("/", async (req, res) => {
     try {
-        const { customerName, mobileNumber, gender, dob, purposeOfVisit } = req.body;
+        // Destructure address from body
+        const { customerName, mobileNumber, gender, dob, address, purposeOfVisit } = req.body;
 
         if (!customerName || !mobileNumber) {
             return res.status(400).json({ message: "Missing required fields" });
@@ -97,6 +82,7 @@ router.post("/", async (req, res) => {
             mobileNumber,
             gender,
             dob,
+            address, // <--- Save Address
             purposeOfVisit,
         });
 

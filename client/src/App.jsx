@@ -4,6 +4,7 @@ import Login from "./page/Login";
 import Dashboard from "./admin/Dashboard";
 import Prescription from "./admin/Prescription";
 import Items from "./admin/Items";
+import PurshaseBill from "./admin/PurshaseBill";
 import Billing from "./admin/Billing";
 import Remaining from "./admin/Remaining";
 import History from "./admin/History";
@@ -46,7 +47,15 @@ const App = () => {
         }
       />
       <Route
-        path="/billing"
+        path="/purshase-bill"
+        element={
+          <ProtectedRoute>
+            <PurshaseBill />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sale-bill"
         element={
           <ProtectedRoute>
             <Billing />
@@ -54,7 +63,7 @@ const App = () => {
         }
       />
       <Route
-        path="/remaining"
+        path="/remaining-bill"
         element={
           <ProtectedRoute>
             <Remaining />

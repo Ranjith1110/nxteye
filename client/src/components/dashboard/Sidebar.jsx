@@ -27,8 +27,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: "Dashboard", icon: <Home size={18} />, path: "/dashboard" },
         { name: "Prescription", icon: <FileText size={18} />, path: "/prescription" },
         { name: "Items", icon: <FileText size={18} />, path: "/items" },
-        { name: "Billing", icon: <ShoppingBag size={18} />, path: "/billing" },
-        { name: "Remaining", icon: <Banknote size={18} />, path: "/remaining" },
+        { name: "Purshase Bill", icon: <FileText size={18} />, path: "/purshase-bill" },
+        { name: "Sale Bill", icon: <ShoppingBag size={18} />, path: "/sale-bill" },
+        { name: "Remaining Bill", icon: <Banknote size={18} />, path: "/remaining-bill" },
         { name: "History", icon: <Clock size={18} />, path: "/history" },
         { name: "CustomerList", icon: <Users size={18} />, path: "/customer-list" },
     ];
