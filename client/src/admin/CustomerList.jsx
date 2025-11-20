@@ -2,11 +2,21 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/dashboard/Layout';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { ChevronLeft, ChevronRight, Search, RefreshCw } from 'lucide-react';
+import { 
+    ChevronLeft, 
+    ChevronRight, 
+    Search, 
+    RefreshCw, 
+    Eye, 
+    X, 
+    FileText, 
+    ChevronUp,    // Imported
+    ChevronDown   // Imported
+} from 'lucide-react';
 
 // Get API URL from environment variables
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
-const CUSTOMERS_PER_PAGE = 15;
+const CUSTOMERS_PER_PAGE = 20; // Increased to 20 so "Show More" has data to show
 
 const CustomerList = () => {
     const [customers, setCustomers] = useState([]);
@@ -23,12 +33,20 @@ const CustomerList = () => {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
+    // --- State for Show More / Less ---
+    const [showAllItems, setShowAllItems] = useState(false);
+
+    // --- State for Modal ---
+    const [showModal, setShowModal] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+
     // --- Fetch Data Function ---
     const fetchCustomers = async (page, search, purpose, startDate, endDate) => {
         setLoading(true);
         setError(null);
+        // Reset expansion when fetching new data
+        setShowAllItems(false); 
         try {
-            // Construct the query URL with all filter parameters
             const url = `${API_URL}/api/customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&search=${search}&purpose=${purpose}&startDate=${startDate}&endDate=${endDate}`;
 
             const res = await fetch(url);
@@ -38,8 +56,9 @@ const CustomerList = () => {
             const data = await res.json();
 
             setCustomers(data.customers);
-            setCurrentPage(data.currentPage);
-            setTotalPages(data.totalPages);
+            // Ensure these are numbers to prevent NaN errors
+            setCurrentPage(Number(data.currentPage) || 1);
+            setTotalPages(Number(data.totalPages) || 1);
 
         } catch (err) {
             console.error(err);
@@ -51,48 +70,50 @@ const CustomerList = () => {
     };
 
     // --- Effects ---
-    // Initial fetch on component mount
     useEffect(() => {
         fetchCustomers(1, "", "", "", "");
     }, []);
 
     // --- Event Handlers ---
-
-    // Handle "Apply Filters" button click
     const handleFilterSubmit = () => {
-        setCurrentPage(1); // Reset to first page on a new filter
+        setCurrentPage(1);
         fetchCustomers(1, searchTerm, purpose, startDate, endDate);
     };
 
-    // Handle Reset Button Click
     const handleReset = () => {
-        setSearchTerm("");    // Clear the search input
+        setSearchTerm("");
         setPurpose("");
         setStartDate("");
         setEndDate("");
-        setCurrentPage(1);  // Go back to page 1
-        fetchCustomers(1, "", "", "", ""); // Fetch all customers
+        setCurrentPage(1);
+        fetchCustomers(1, "", "", "", "");
         toast.info("Filters reset");
     };
 
-    // Handle pressing Enter in search box
     const handleSearchKeyPress = (e) => {
         if (e.key === 'Enter') {
             handleFilterSubmit();
         }
     };
 
-    // Handle pagination
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages) {
-            // Fetch new page *with* all current filters
             fetchCustomers(newPage, searchTerm, purpose, startDate, endDate);
         }
     };
 
-    // --- Helper to format date ---
+    const handleOpenPreview = (customer) => {
+        setSelectedCustomer(customer);
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedCustomer(null);
+    };
+
     const formatDate = (dateString) => {
-        if (!dateString) return "N/A";
+        if (!dateString) return "-";
         try {
             return new Date(dateString).toLocaleDateString('en-IN', {
                 day: '2-digit',
@@ -100,18 +121,20 @@ const CustomerList = () => {
                 year: 'numeric'
             });
         } catch (e) {
-            return dateString; // Fallback for invalid dates
+            return dateString;
         }
     };
 
+    // --- Logic for slicing data (Show 10 or All) ---
+    const displayedCustomers = showAllItems ? customers : customers.slice(0, 10);
+
     return (
         <Layout>
-            <div className="bg-white shadow-md rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List</h2>
+            <div className="bg-white shadow-md rounded-lg p-6 relative">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List & Clinical History</h2>
 
                 {/* --- Filter Bar --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
-                    {/* Search */}
                     <div className="relative md:col-span-2">
                         <label className="block text-sm font-medium text-gray-600">Search Name/Mobile</label>
                         <input
@@ -120,142 +143,270 @@ const CustomerList = () => {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyPress={handleSearchKeyPress}
-                            className="w-full mt-1 p-2 pl-10 border rounded-md"
+                            className="w-full mt-1 p-2 pl-10 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none"
                         />
                         <Search size={18} className="absolute left-3 bottom-2.5 text-gray-400" />
                     </div>
 
-                    {/* Purpose */}
                     <div>
                         <label className="block text-sm font-medium text-gray-600">Purpose</label>
                         <select
                             value={purpose}
                             onChange={(e) => setPurpose(e.target.value)}
-                            className="w-full mt-1 p-2 border rounded-md bg-white"
+                            className="w-full mt-1 p-2 border rounded-md bg-white focus:ring-2 focus:ring-[#5ce1e6] outline-none"
                         >
                             <option value="">All Purposes</option>
                             <option value="Purchase">Purchase</option>
                             <option value="Inquiry">Inquiry</option>
+                            <option value="Eye Test">Eye Test</option>
+                            <option value="Consultation">Consultation</option>
+                            <option value="Contact Lens">Contact Lens</option>
                             <option value="Service/Repair">Service/Repair</option>
-                            <option value="Browsing">Browsing</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
 
-                    {/* Start Date */}
                     <div>
                         <label className="block text-sm font-medium text-gray-600">From Date</label>
                         <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full mt-1 p-2 border rounded-md"
+                            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none"
                         />
                     </div>
 
-                    {/* End Date */}
                     <div>
                         <label className="block text-sm font-medium text-gray-600">To Date</label>
                         <input
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full mt-1 p-2 border rounded-md"
+                            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none"
                         />
                     </div>
                 </div>
 
-                {/* --- Button Controls --- */}
                 <div className="flex justify-end gap-2 mb-6">
                     <button
                         onClick={handleFilterSubmit}
-                        className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-medium hover:bg-[#03214a] hover:text-white transition"
+                        className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-bold hover:bg-[#03214a] hover:text-white transition shadow-sm"
                     >
                         Apply Filters
                     </button>
                     <button
                         onClick={handleReset}
-                        className="flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-medium hover:bg-gray-300 transition"
+                        className="flex items-center gap-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition"
                     >
                         <RefreshCw size={16} />
                         Reset
                     </button>
                 </div>
 
-                {/* --- Data Display --- */}
+                {/* --- Data Table --- */}
                 {loading ? (
-                    <div className="text-center py-10">Loading customers...</div>
+                    <div className="text-center py-10 text-gray-500 animate-pulse">Loading customer data...</div>
                 ) : error ? (
                     <div className="text-center py-10 text-red-600">{error}</div>
                 ) : customers.length === 0 ? (
-                    <div className="text-center py-10 text-gray-500">No customers found.</div>
+                    <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg">No customers found matching filters.</div>
                 ) : (
                     <>
-                        {/* --- Customer Table --- */}
-                        <div className="mt-4 overflow-x-auto rounded-t-lg border border-gray-200">
+                        <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                             <table className="min-w-full text-sm text-left text-gray-700">
-                                <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-100 font-bold tracking-wider">
                                     <tr>
-                                        <th className="px-4 py-3 border-b">Sl.No</th>
-                                        <th className="px-4 py-3 border-b">Name</th>
-                                        <th className="px-4 py-3 border-b">Mobile Number</th>
-                                        <th className="px-4 py-3 border-b">Address</th> {/* Added Address Header */}
-                                        <th className="px-4 py-3 border-b">Gender</th>
-                                        <th className="px-4 py-3 border-b">DOB</th>
-                                        <th className="px-4 py-3 border-b">Purpose of Visit</th>
+                                        <th className="px-4 py-3 border-b text-center w-16">Sl.No</th>
+                                        <th className="px-4 py-3 border-b">Customer Name</th>
+                                        <th className="px-4 py-3 border-b">Mobile</th>
+                                        <th className="px-4 py-3 border-b">Address</th>
+                                        <th className="px-4 py-3 border-b">Purpose</th>
                                         <th className="px-4 py-3 border-b">Date Joined</th>
+                                        <th className="px-4 py-3 border-b text-center">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {customers.map((customer, index) => (
-                                        <tr key={customer._id} className="bg-white border-b hover:bg-gray-50">
-                                            <td className="px-4 py-3 text-center">
-                                                {(currentPage - 1) * CUSTOMERS_PER_PAGE + index + 1}
+                                <tbody className="divide-y divide-gray-100">
+                                    {displayedCustomers.map((customer, index) => (
+                                        <tr key={customer._id} className="bg-white hover:bg-blue-50 transition-colors">
+                                            <td className="px-4 py-3 text-center border-b font-medium text-gray-500">
+                                                {(Number(currentPage || 1) - 1) * CUSTOMERS_PER_PAGE + index + 1}
                                             </td>
-                                            <td className="p-2">{customer.customerName}</td>
-                                            <td className="p-4">{customer.mobileNumber}</td>
-                                            <td className="p-4">{customer.address || "N/A"}</td> {/* Added Address Data */}
-                                            <td className="p-4 text-left">{customer.gender || "N/A"}</td>
-                                            <td className="p-4 text-left">{formatDate(customer.dob)}</td>
-                                            <td className="p-4">{customer.purposeOfVisit || "N/A"}</td>
-                                            <td className="p-4 text-left">{formatDate(customer.createdAt)}</td>
+                                            <td className="px-4 py-3 font-semibold text-gray-800  border-b">{customer.customerName}</td>
+                                            <td className="px-4 py-3 text-gray-600  border-b">{customer.mobileNumber}</td>
+                                            <td className="px-4 py-3 text-gray-500 max-w-xs truncate  border-b" title={customer.address}>
+                                                {customer.address || "-"}
+                                            </td>
+                                            <td className="px-4 py-3  border-b">
+                                                <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">
+                                                    {customer.purposeOfVisit || "N/A"}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-gray-500  border-b">{formatDate(customer.createdAt)}</td>
+                                            <td className="px-4 py-3 text-center  border-b">
+                                                <button 
+                                                    onClick={() => handleOpenPreview(customer)}
+                                                    className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2 rounded-full transition"
+                                                    title="View Clinical Readings"
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* --- Pagination Controls --- */}
+                        {/* --- Show More / Show Less Button --- */}
+                        {customers.length > 10 && (
+                            <div className="flex justify-center mt-4">
+                                <button
+                                    onClick={() => setShowAllItems(!showAllItems)}
+                                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md transition font-medium text-sm"
+                                >
+                                    {showAllItems ? (
+                                        <>
+                                            Show Less <ChevronUp size={18} />
+                                        </>
+                                    ) : (
+                                        <>
+                                            Show More ({customers.length - 10} more items) <ChevronDown size={18} />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* --- Pagination --- */}
                         {totalPages > 1 && (
                             <div className="flex justify-between items-center mt-6">
                                 <button
                                     onClick={() => handlePageChange(currentPage - 1)}
                                     disabled={currentPage === 1}
-                                    className="flex items-center gap-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-1 bg-white border text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-50 disabled:opacity-50 transition shadow-sm"
                                 >
-                                    <ChevronLeft size={16} />
-                                    Previous
+                                    <ChevronLeft size={16} /> Prev
                                 </button>
 
-                                <span className="text-sm font-medium text-gray-600">
+                                <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                                     Page {currentPage} of {totalPages}
                                 </span>
 
                                 <button
                                     onClick={() => handlePageChange(currentPage + 1)}
                                     disabled={currentPage === totalPages}
-                                    className="flex items-center gap-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-1 bg-white border text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-50 disabled:opacity-50 transition shadow-sm"
                                 >
-                                    Next
-                                    <ChevronRight size={16} />
+                                    Next <ChevronRight size={16} />
                                 </button>
                             </div>
                         )}
                     </>
                 )}
             </div>
+
+            {/* --- CLINICAL READINGS MODAL --- */}
+            {showModal && selectedCustomer && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+                        <div className="bg-[#03214a] text-white p-4 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold">Clinical History</h3>
+                                <p className="text-xs text-blue-200">Patient: {selectedCustomer.customerName} | {selectedCustomer.mobileNumber}</p>
+                            </div>
+                            <button onClick={handleCloseModal} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto bg-gray-50 flex-grow">
+                            {selectedCustomer.clinicalHistory && selectedCustomer.clinicalHistory.length > 0 ? (
+                                <div className="space-y-6">
+                                    {[...selectedCustomer.clinicalHistory].reverse().map((entry, idx) => (
+                                        <div key={idx} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                                            <div className="bg-gray-100 px-4 py-2 border-b flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                                        {entry.testType || "Unknown"}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-700">Date: {entry.visitDate}</span>
+                                                </div>
+                                                <span className="text-xs text-gray-500">#{selectedCustomer.clinicalHistory.length - idx}</span>
+                                            </div>
+
+                                            <div className="p-4">
+                                                {entry.testType === "Glasses" ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <ReadingTable title="Right Eye (OD)" data={entry.readings?.right} color="blue" />
+                                                        <ReadingTable title="Left Eye (OS)" data={entry.readings?.left} color="blue" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <CLReadingTable title="Right Eye (OD)" data={entry.readings?.right} />
+                                                        <CLReadingTable title="Left Eye (OS)" data={entry.readings?.left} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+                                    <FileText size={48} className="mb-2 opacity-20" />
+                                    <p>No clinical readings found for this customer.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4 border-t bg-white flex justify-end">
+                            <button onClick={handleCloseModal} className="px-5 py-2 bg-gray-200 text-gray-800 rounded-full text-sm font-medium hover:bg-gray-300 transition">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ToastContainer position="top-right" autoClose={2000} />
         </Layout>
+    );
+};
+
+// --- Sub-Components ---
+const ReadingTable = ({ title, data, color }) => {
+    if (!data) return null;
+    return (
+        <div className={`border border-${color}-100 rounded-lg overflow-hidden`}>
+            <div className={`bg-${color}-50 px-3 py-1 text-xs font-bold text-${color}-800 uppercase border-b border-${color}-100`}>
+                {title}
+            </div>
+            <div className="grid grid-cols-3 gap-y-2 gap-x-4 p-3 text-xs">
+                <div><span className="text-gray-400 block text-[10px]">SPH</span> <span className="font-bold">{data.SPH}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">CYL</span> <span className="font-bold">{data.CYL}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">AXIS</span> <span className="font-bold">{data.AXIS}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">ADD</span> <span className="font-bold">{data.ADD}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">PD</span> <span className="font-bold">{data.PD}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">VA</span> <span className="font-bold">{data.DistanceVA}</span></div>
+            </div>
+        </div>
+    );
+};
+
+const CLReadingTable = ({ title, data }) => {
+    if (!data) return null;
+    return (
+        <div className="border border-green-100 rounded-lg overflow-hidden">
+            <div className="bg-green-50 px-3 py-1 text-xs font-bold text-green-800 uppercase border-b border-green-100">
+                {title}
+            </div>
+            <div className="grid grid-cols-3 gap-y-2 gap-x-4 p-3 text-xs">
+                <div><span className="text-gray-400 block text-[10px]">PWR</span> <span className="font-bold">{data.SPH}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">CYL</span> <span className="font-bold">{data.CYL}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">AXIS</span> <span className="font-bold">{data.AXIS}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">BC</span> <span className="font-bold">{data.BC}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">DIA</span> <span className="font-bold">{data.DIA}</span></div>
+            </div>
+        </div>
     );
 };
 

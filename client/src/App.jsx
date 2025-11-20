@@ -2,12 +2,12 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./page/Home";
 import Login from "./page/Login";
 import Dashboard from "./admin/Dashboard";
-import Prescription from "./admin/Prescription";
+// import Prescription from "./admin/Prescription";
 import Items from "./admin/Items";
 import PurshaseBill from "./admin/PurshaseBill";
-import Billing from "./admin/Billing";
-import Remaining from "./admin/Remaining";
-import History from "./admin/History";
+import OrderSummary from "./admin/OrderSummary";
+import Ordered from "./admin/Ordered";
+import Delivered from "./admin/Delivered";
 import CustomerList from "./admin/CustomerList";
 
 // 🔒 Protected Route Component
@@ -30,14 +30,14 @@ const App = () => {
           </ProtectedRoute>
         }
       />
-      <Route
+      {/* <Route
         path="/prescription"
         element={
           <ProtectedRoute>
             <Prescription />
           </ProtectedRoute>
         }
-      />
+      /> */}
       <Route
         path="/items"
         element={
@@ -55,26 +55,26 @@ const App = () => {
         }
       />
       <Route
-        path="/sale-bill"
+        path="/order-summary"
         element={
           <ProtectedRoute>
-            <Billing />
+            <OrderSummary />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/remaining-bill"
+        path="/ordered"
         element={
           <ProtectedRoute>
-            <Remaining />
+            <Ordered />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/history"
+        path="/delivered"
         element={
           <ProtectedRoute>
-            <History />
+            <Delivered />
           </ProtectedRoute>
         }
       />

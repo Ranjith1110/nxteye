@@ -4,7 +4,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import connectDB from "./config/db.js";
 import itemRoutes from "./routes/itemRoutes.js";
-import billingRoutes from "./routes/billingRoutes.js";
+import orderSummaryRoutes from "./routes/orderSummaryRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import purchaseBillRoutes from "./routes/purchaseBillRoutes.js";
 
@@ -21,7 +21,7 @@ app.use(cors({
 
 app.use(bodyParser.json());
 app.use("/api/items", itemRoutes);
-app.use("/api/billing", billingRoutes);
+app.use("/api/billing", orderSummaryRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/purchase-bills", purchaseBillRoutes);
 

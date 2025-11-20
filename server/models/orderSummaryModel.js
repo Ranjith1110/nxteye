@@ -1,19 +1,18 @@
-// billingModel.js
 import mongoose from "mongoose";
 
-const billingSchema = new mongoose.Schema({
+const orderSummarySchema = new mongoose.Schema({
     invoiceNo: { type: String, required: true },
     date: { type: String, required: true },
+    
+    // Basic Customer Snapshot for the Bill
     customer: {
         customerName: String,
         mobileNumber: String,
-        gender: String,
-        dob: String,
-        address: String, // <--- Added Address Field
-        purposeOfVisit: String,
+        address: String, 
     },
+
+    // Billing Details
     items: { type: Array, default: [] },
-    
     subTotal: Number, 
     totalCgstAmount: Number,
     totalSgstAmount: Number,
@@ -23,7 +22,15 @@ const billingSchema = new mongoose.Schema({
     paymentMethod: { type: String, default: 'Cash' },
     remaining: Number,
     grandTotal: Number,
+
+    // New Fields
+    deliveryDate: { type: String },
+    orderStatus: {
+        ordered: { type: Boolean, default: true },
+        delivered: { type: Boolean, default: false }
+    },
+    
     createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model("Billing", billingSchema);
+export default mongoose.model("OrderSummary", orderSummarySchema);

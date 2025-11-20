@@ -1,96 +1,94 @@
-// customerRoutes.js
 import express from "express";
 import Customer from "../models/customerModel.js";
 
 const router = express.Router();
 
-// --- GET all customers with search, filter, and pagination ---
+// --- GET Customers (Search Logic) ---
 router.get("/", async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 15;
-        const skip = (page - 1) * limit;
-
-        const searchTerm = req.query.search || "";
-        const purpose = req.query.purpose || "";
-        const startDate = req.query.startDate;
-        const endDate = req.query.endDate;
-
+        const { search } = req.query;
         let query = {};
-
-        if (searchTerm) {
+        if (search) {
             query.$or = [
-                { customerName: { $regex: searchTerm, $options: "i" } },
-                { mobileNumber: { $regex: searchTerm } }
+                { customerName: { $regex: search, $options: "i" } },
+                { mobileNumber: { $regex: search } }
             ];
         }
-
-        if (purpose) {
-            query.purposeOfVisit = purpose;
-        }
-
-        if (startDate && endDate) {
-            try {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                query.createdAt = { $gte: start, $lte: end };
-            } catch (e) {
-                console.error("Invalid date format provided");
-            }
-        }
-
-        const customers = await Customer.find(query)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        const totalCustomers = await Customer.countDocuments(query);
-        const totalPages = Math.ceil(totalCustomers / limit);
-
-        res.status(200).json({
-            customers,
-            currentPage: page,
-            totalPages,
-            totalCustomers
-        });
-
+        const customers = await Customer.find(query).sort({ createdAt: -1 }).limit(20);
+        res.status(200).json({ customers });
     } catch (error) {
-        console.error("Get Customers Error:", error);
-        res.status(500).json({ message: error.message || "Server error" });
+        res.status(500).json({ message: error.message });
     }
 });
 
-// --- POST a new customer (Updated with Address) ---
+// --- GET Single Customer by Mobile (For Auto-fill) ---
+router.get("/mobile/:mobileNumber", async (req, res) => {
+    try {
+        const { mobileNumber } = req.params;
+        const customer = await Customer.findOne({ mobileNumber });
+        
+        if (!customer) {
+            return res.status(404).json({ message: "Customer not found" });
+        }
+
+        // Get the latest clinical entry if it exists
+        const lastClinicalEntry = customer.clinicalHistory && customer.clinicalHistory.length > 0 
+            ? customer.clinicalHistory[customer.clinicalHistory.length - 1] 
+            : null;
+
+        res.status(200).json({ customer, lastClinicalEntry });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// --- POST: Save Customer Info & Clinical Entry ---
 router.post("/", async (req, res) => {
     try {
-        // Destructure address from body
-        const { customerName, mobileNumber, gender, dob, address, purposeOfVisit } = req.body;
+        const { 
+            customerName, mobileNumber, gender, dob, address, purposeOfVisit, 
+            clinicalEntry // { visitDate, testType, readings, ... }
+        } = req.body;
 
         if (!customerName || !mobileNumber) {
-            return res.status(400).json({ message: "Missing required fields" });
+            return res.status(400).json({ message: "Customer Name and Mobile are required" });
         }
 
-        const existingCustomer = await Customer.findOne({ mobileNumber });
-        if (existingCustomer) {
-            return res.status(409).json({ message: "Customer with this mobile number already exists." });
+        // 1. Check if customer already exists
+        let customer = await Customer.findOne({ mobileNumber });
+
+        if (customer) {
+            // 2. Update existing customer details (Shared Info)
+            customer.customerName = customerName;
+            customer.gender = gender || customer.gender;
+            customer.dob = dob || customer.dob;
+            customer.address = address || customer.address;
+            customer.purposeOfVisit = purposeOfVisit || customer.purposeOfVisit;
+            
+            // 3. Add the new Clinical Entry to history if provided
+            if (clinicalEntry) {
+                customer.clinicalHistory.push(clinicalEntry);
+            }
+            await customer.save();
+            res.status(200).json({ message: "Clinical Entry Added to Existing Customer", customer });
+        } else {
+            // 4. Create New Customer with Clinical Entry
+            customer = new Customer({
+                customerName,
+                mobileNumber,
+                gender,
+                dob,
+                address,
+                purposeOfVisit,
+                clinicalHistory: clinicalEntry ? [clinicalEntry] : []
+            });
+            await customer.save();
+            res.status(201).json({ message: "New Customer & Clinical Entry Saved", customer });
         }
 
-        const customer = new Customer({
-            customerName,
-            mobileNumber,
-            gender,
-            dob,
-            address, // <--- Save Address
-            purposeOfVisit,
-        });
-
-        await customer.save();
-        res.status(201).json({ message: "Customer saved successfully", customer });
     } catch (error) {
         console.error("Customer Save Error:", error);
-        res.status(500).json({ message: error.message || "Server error" });
+        res.status(500).json({ message: "Error saving data", error: error.message });
     }
 });
 
