@@ -1,5 +1,5 @@
 import React from "react";
-import trend1 from "/assets/home-hero/4.jpg"; // sample, replace with your images
+import trend1 from "/assets/home-hero/4.jpg";
 
 const WearTheTrend = () => {
     const trends = [
@@ -43,16 +43,25 @@ const WearTheTrend = () => {
 
     return (
         <section className="bg-white py-16 relative overflow-hidden">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-[#5ce1e6]/20 blur-3xl rounded-full"></div>
             <div className="px-2 md:px-5">
                 {/* Section Header */}
-                <div className="text-center mb-10">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-extrabold tracking-wide text-[#03214a] uppercase">
+                        WEAR THE TREND
+                    </h2>
+                    <p className="text-gray-600 mt-3 text-lg max-w-xl mx-auto">
+                        Our hottest collections.
+                    </p>
+                </div>
+                {/* <div className="text-center mb-10">
                     <h2 className="text-3xl md:text-4xl font-bold text-gray-800 uppercase tracking-wide">
                         WEAR THE TREND
                     </h2>
                     <p className="text-gray-500 mt-2 text-base md:text-lg">
                         Our hottest collections.
                     </p>
-                </div>
+                </div> */}
 
                 {/* Scrollable Cards Section */}
                 <div className="relative">

@@ -15,6 +15,7 @@ import {
     IoMail
 } from 'react-icons/io5';
 import { FaPhoneVolume } from "react-icons/fa6";
+import logo from "/assets/home-hero/nxteye-logo.png";
 
 
 const TOPBAR_HEIGHT = 40; // px
@@ -46,34 +47,7 @@ const navLinks = [
             { name: 'Monthly', href: '#' },
             { name: 'Colored', href: '#' },
         ],
-    },
-    {
-        name: 'Accessories',
-        href: '#',
-        subLinks: [
-            { name: 'Cases', href: '#' },
-            { name: 'Cleaning Kits', href: '#' },
-            { name: 'Chains', href: '#' },
-        ],
-    },
-    {
-        name: 'Eyetastic Sale',
-        href: '#',
-        subLinks: [
-            { name: 'Up to 50% off', href: '#' },
-            { name: 'Bundles', href: '#' },
-            { name: 'Clearance', href: '#' },
-        ],
-    },
-    {
-        name: 'Store Locator',
-        href: '#',
-        subLinks: [
-            { name: 'Find Store', href: '#' },
-            { name: 'Opening Hours', href: '#' },
-        ],
-    },
-    { name: 'Franchise with us', href: '#', subLinks: [{ name: 'Apply', href: '#' }] },
+    }
 ];
 
 export default function Navbar() {
@@ -185,9 +159,7 @@ export default function Navbar() {
             >
                 <div className="px-4 sm:px-6 h-20 flex items-center justify-between">
                     {/* Logo */}
-                    <a href="/" className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
-                        NxtEye
-                    </a>
+                    <img width={190} src={logo} alt="NxtEye Logo" />
 
                     {/* Desktop Links */}
                     <div className="hidden lg:flex items-center relative">
@@ -248,7 +220,6 @@ export default function Navbar() {
                     {/* Right Side Icons */}
                     <div className="flex items-center gap-2 md:gap-3">
                         <button className="text-gray-700 hover:text-blue-700 transition"><IoPersonCircleSharp size={22} /></button>
-                        <button className="text-gray-700 hover:text-blue-700 transition"><FaCartPlus size={22} /></button>
                         <button
                             aria-label="Menu"
                             className="lg:hidden text-gray-700 hover:text-blue-700 transition p-2"
