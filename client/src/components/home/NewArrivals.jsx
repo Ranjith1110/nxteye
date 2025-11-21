@@ -46,11 +46,11 @@ const NewArrivals = () => {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-[#5ce1e6]/20 blur-3xl rounded-full"></div>
             <div className="px-2 md:px-5">
                 {/* Section Header */}
-                <div className="text-center mb-10">
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 uppercase tracking-wide">
+                <div className="text-center mb-14">
+                    <h2 className="text-4xl font-extrabold text-[#03214a] tracking-wide">
                         New Arrivals
                     </h2>
-                    <p className="text-gray-500 mt-2 text-base md:text-lg">
+                    <p className="text-gray-600 text-lg mt-3 max-w-xl mx-auto">
                         Check out the latest additions to our collection.
                     </p>
                 </div>
