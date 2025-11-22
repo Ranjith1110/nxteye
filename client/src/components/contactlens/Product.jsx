@@ -3,11 +3,10 @@ import { FaHeart, FaRegHeart, FaStar, FaCartPlus } from 'react-icons/fa';
 import vincent from "/assets/vincent.webp";
 import { useCart } from '../../context/CartContext';
 
-// MOCK DATA SECTION
 const products = [
     {
         id: 1,
-        brand: "John Jacobs",
+        brand: "Demo",
         details: "Size: Medium • John Jacobs",
         rating: 4.8,
         reviews: 2162,
@@ -19,7 +18,7 @@ const products = [
     },
     {
         id: 2,
-        brand: "Vincent Chase",
+        brand: "Demo 2",
         details: "Size: Wide • Sleek Steel",
         rating: 4.8,
         reviews: 5252,
@@ -32,7 +31,7 @@ const products = [
     },
     {
         id: 3,
-        brand: "John Jacobs",
+        brand: "Demo 3",
         details: "Size: Narrow • John Jacobs",
         rating: 4.9,
         reviews: 869,
@@ -47,7 +46,7 @@ const products = [
 // INDIVIDUAL CARD COMPONENT
 const ProductCard = ({ product }) => {
     const [isLiked, setIsLiked] = useState(false);
-    const { addToCart } = useCart();
+    const { addToCart } = useCart(); // GET ADD FUNCTION
 
     return (
         <div className="group relative bg-white border border-gray-200 rounded-xl p-4 transition-all duration-300 hover:shadow-xl cursor-pointer flex flex-col justify-between h-full">

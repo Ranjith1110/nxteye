@@ -17,9 +17,10 @@ import {
 } from 'react-icons/io5';
 import { FaPhoneVolume } from "react-icons/fa6";
 import logo from "/assets/home-hero/nxteye-logo.png";
+import { useCart } from '../../context/CartContext';
 
 
-const TOPBAR_HEIGHT = 40; // px
+const TOPBAR_HEIGHT = 40;
 
 const navLinks = [
     {
@@ -52,6 +53,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+    const { cartItems } = useCart(); // GET CART ITEMS
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [openDropdownIndex, setOpenDropdownIndex] = useState(-1);
     const [openMobileAccordion, setOpenMobileAccordion] = useState(null);
@@ -61,7 +63,6 @@ export default function Navbar() {
     const closeTimeoutRef = useRef(null);
     const navRef = useRef(null);
 
-    // Scroll hide/show topbar
     useEffect(() => {
         const handleScroll = () => {
             const current = window.pageYOffset;
@@ -74,13 +75,11 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Disable body scroll when menu open
     useEffect(() => {
         document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
         return () => (document.body.style.overflow = '');
     }, [isMobileMenuOpen]);
 
-    // ESC closes menu/dropdown
     useEffect(() => {
         const onKey = (e) => {
             if (e.key === 'Escape') {
@@ -92,7 +91,6 @@ export default function Navbar() {
         return () => window.removeEventListener('keydown', onKey);
     }, []);
 
-    // Click outside closes dropdown
     useEffect(() => {
         const onDocClick = (e) => {
             if (navRef.current && !navRef.current.contains(e.target)) {
@@ -232,6 +230,17 @@ export default function Navbar() {
                             <Link to="/login" className="text-gray-700 hover:text-blue-700 transition">
                                 <IoPersonCircleSharp size={24} />
                             </Link>
+                            {/* --- CART ICON LOGIC --- */}
+                            <Link to="/cart" className="text-gray-700 hover:text-blue-700 transition relative">
+                                <FaCartPlus size={22} />
+                                {/* Dynamic Red Circle */}
+                                {cartItems.length > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                        {cartItems.length}
+                                    </span>
+                                )}
+                            </Link>
+                            {/* ------------------- */}
 
                             <button
                                 aria-label="Menu"

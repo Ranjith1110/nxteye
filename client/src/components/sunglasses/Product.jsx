@@ -7,7 +7,7 @@ import { useCart } from '../../context/CartContext';
 const products = [
     {
         id: 1,
-        brand: "John Jacobs",
+        brand: "Sun demo 1",
         details: "Size: Medium • John Jacobs",
         rating: 4.8,
         reviews: 2162,
@@ -19,7 +19,7 @@ const products = [
     },
     {
         id: 2,
-        brand: "Vincent Chase",
+        brand: "Sun demo 2",
         details: "Size: Wide • Sleek Steel",
         rating: 4.8,
         reviews: 5252,
@@ -32,7 +32,7 @@ const products = [
     },
     {
         id: 3,
-        brand: "John Jacobs",
+        brand: "Sun demo 3",
         details: "Size: Narrow • John Jacobs",
         rating: 4.9,
         reviews: 869,

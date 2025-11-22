@@ -1,5 +1,5 @@
 import React from "react";
-import offerBanner from "/assets/home-hero/4.jpg";
+import offerBanner from "/assets/home-hero/buyonegetone.png";
 
 const LimitedTimeOffers = () => {
   return (
@@ -31,10 +31,10 @@ const LimitedTimeOffers = () => {
           />
 
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/10"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/30 to-black/20"></div>
 
           {/* Text Overlay */}
-          <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
+          {/* <div className="absolute inset-0 p-8 md:p-12 flex flex-col justify-center">
             <h3 className="text-3xl md:text-4xl font-bold text-white drop-shadow-xl leading-tight">
               Up to <span className="text-[#5ce1e6]">50% OFF</span> on Select Frames
             </h3>
@@ -46,7 +46,7 @@ const LimitedTimeOffers = () => {
             <button className="mt-6 w-fit px-8 py-3 rounded-full bg-[#5ce1e6] text-[#03214a] text-sm font-semibold shadow-md hover:bg-[#03214a] hover:text-white transition-all duration-300">
               SHOP OFFER
             </button>
-          </div>
+          </div> */}
         </div>
 
       </div>

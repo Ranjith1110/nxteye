@@ -1,30 +1,37 @@
 import React from "react";
 
 // Replace with your real logos (public or src paths)
-import brand1 from "/assets/home-hero/4.jpg";
-import brand2 from "/assets/home-hero/4.jpg";
-import brand3 from "/assets/home-hero/4.jpg";
-import brand4 from "/assets/home-hero/4.jpg";
-import brand5 from "/assets/home-hero/4.jpg";
-import brand6 from "/assets/home-hero/4.jpg";
+import brand1 from "/assets/home-hero/ourbrands/1.png";
+import brand2 from "/assets/home-hero/ourbrands/2.png";
+import brand3 from "/assets/home-hero/ourbrands/3.png";
+import brand4 from "/assets/home-hero/ourbrands/4.png";
+import brand5 from "/assets/home-hero/ourbrands/5.png";
+import brand6 from "/assets/home-hero/ourbrands/6.png";
+import brand7 from "/assets/home-hero/ourbrands/7.png";
+import brand8 from "/assets/home-hero/ourbrands/8.png";
+import brand9 from "/assets/home-hero/ourbrands/9.png";
+import brand10 from "/assets/home-hero/ourbrands/10.png";
+import brand11 from "/assets/home-hero/ourbrands/11.png";
 
 const OurBrands = () => {
-    // original set (we'll render it twice below for smooth loop)
     const baseBrands = [
-        { id: 1, img: brand1, name: "Ray-Ban" },
-        { id: 2, img: brand2, name: "Vincent Chase" },
-        { id: 3, img: brand3, name: "Titan Eye+" },
-        { id: 4, img: brand4, name: "Fastrack" },
-        { id: 5, img: brand5, name: "Lenskart" },
-        { id: 6, img: brand6, name: "Polaroid" }
+        { id: 1, img: brand1, name: "" },
+        { id: 2, img: brand2, name: "" },
+        { id: 3, img: brand3, name: "" },
+        { id: 4, img: brand4, name: "" },
+        { id: 5, img: brand5, name: "" },
+        { id: 6, img: brand6, name: "" },
+        { id: 7, img: brand7, name: "" },
+        { id: 8, img: brand8, name: "" },
+        { id: 9, img: brand9, name: "" },
+        { id: 10, img: brand10, name: "" },
+        { id: 11, img: brand11, name: "" }
     ];
 
-    // duplicate array so the animation can translate -50% smoothly
     const brands = [...baseBrands, ...baseBrands];
 
     return (
         <section className="py-16 bg-gradient-to-b from-white to-blue-50 relative overflow-hidden">
-            {/* Inject the CSS required for smooth scroll and hide scrollbar */}
             <style>{`
         /* Keyframes: translate the track left by 50% (we duplicated content) */
         @keyframes nxteye-scroll {
@@ -62,7 +69,6 @@ const OurBrands = () => {
         }
       `}</style>
 
-            {/* Soft Glow */}
             <div className="absolute inset-0 mx-auto w-[500px] h-[500px] bg-[#5ce1e6]/25 blur-3xl opacity-40 pointer-events-none"></div>
 
             <div className="relative">
@@ -78,7 +84,6 @@ const OurBrands = () => {
 
                 {/* Smooth Infinite Slider (viewport) */}
                 <div className="nxteye-scroll-viewport nxteye-hide-scrollbar">
-                    {/* track (animated) */}
                     <div className="nxteye-scroll-track">
                         {brands.map((brand, idx) => (
                             <div
@@ -86,7 +91,6 @@ const OurBrands = () => {
                                 className="flex items-center justify-center min-w-[100px] h-[90px] transform transition-transform duration-300 hover:scale-110"
                                 title={brand.name}
                             >
-                                {/* Transparent logo only — no background card */}
                                 <img
                                     src={brand.img}
                                     alt={brand.name}

@@ -19,14 +19,11 @@ export default function Hero() {
         </span>
 
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-          Frame Your <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-200">
-            Unique Vision
-          </span>
+          Cart
         </h1>
 
         <p className="text-gray-200 text-lg md:text-xl mb-8 max-w-2xl mx-auto">
-          Discover frames that blend timeless elegance with modern comfort.
+          Find the perfect look for every face shape.
         </p>
       </div>
     </section>

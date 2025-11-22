@@ -12,6 +12,7 @@ import CustomerList from "./admin/CustomerList";
 import EyeGlasses from "./page/EyeGlasses";
 import SunGlasses from "./page/SunGlasses";
 import ContactLens from "./page/ContactLens";
+import Cart from "./page/Cart";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -25,6 +26,7 @@ const App = () => {
       <Route path="/eyeglasses" element={<EyeGlasses />} />
       <Route path="/sunglasses" element={<SunGlasses />} />
       <Route path="/contact-lenses" element={<ContactLens />} />
+      <Route path="/cart" element={<Cart />} />
       <Route path="/login" element={<Login />} />
       {/* Protected Dashboard Route */}
       <Route

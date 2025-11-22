@@ -40,7 +40,6 @@ const WhyNxTEye = () => {
 
     return (
         <section className="relative py-16 bg-white overflow-hidden">
-            {/* Soft Background Glow */}
             <div className="absolute inset-0 mx-auto w-[500px] h-[500px] bg-[#5ce1e6]/20 blur-3xl rounded-full opacity-50 pointer-events-none"></div>
             <div className="px-4 md:px-8 max-w-7xl mx-auto">
 

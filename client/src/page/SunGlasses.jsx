@@ -1,7 +1,7 @@
 import React from 'react'
 import Navbar from '../components/eyeglasses/Navbar'
 import Hero from '../components/sunglasses/Hero'
-import Product from '../components/eyeglasses/Product'
+import Product from '../components/sunglasses/Product'
 import Footer from '../components/home/Footer'
 
 const SunGlasses = () => {

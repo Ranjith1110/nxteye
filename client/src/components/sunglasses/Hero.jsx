@@ -5,17 +5,14 @@ export default function Hero() {
   return (
     <section className="relative w-full h-[80vh] md:h-[55vh] flex items-center justify-center overflow-hidden bg-gray-900">
 
-      {/* 1. Background Image */}
       <div className="absolute inset-0 z-0">
         <img
-          // You can replace this URL with your local image: src="/assets/eyeglasses-banner.jpg"
           src="https://images.unsplash.com/photo-1591076482161-42ce6da69f67?q=80&w=2072&auto=format&fit=crop"
           alt="Premium Eyeglasses"
           className="w-full h-full object-cover opacity-60"
         />
       </div>
 
-      {/* 2. Content Overlay */}
       <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
         <span className="block text-blue-400 font-semibold tracking-widest uppercase text-sm mb-3">
           New Collection

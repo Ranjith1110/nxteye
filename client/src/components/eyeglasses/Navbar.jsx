@@ -17,13 +17,14 @@ import {
 } from 'react-icons/io5';
 import { FaPhoneVolume } from "react-icons/fa6";
 import logo from "/assets/home-hero/nxteye-logo.png";
+import { useCart } from '../../context/CartContext';
 
-const TOPBAR_HEIGHT = 40; // px
+const TOPBAR_HEIGHT = 40;
 
 const navLinks = [
     {
         name: 'Home',
-        href: '/', // Points to root
+        href: '/',
     },
     {
         name: 'Eyeglasses',
@@ -54,7 +55,6 @@ const navLinks = [
     }
 ];
 
-// Custom style object for the glassy menu to replace <style jsx>
 const glassyMenuStyle = {
     background: 'rgba(255, 255, 255, 0.9)',
     backdropFilter: 'blur(18px)',
@@ -62,6 +62,7 @@ const glassyMenuStyle = {
 };
 
 export default function Navbar() {
+    const { cartItems } = useCart();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [openDropdownIndex, setOpenDropdownIndex] = useState(-1);
     const [openMobileAccordion, setOpenMobileAccordion] = useState(null);
@@ -71,7 +72,6 @@ export default function Navbar() {
     const closeTimeoutRef = useRef(null);
     const navRef = useRef(null);
 
-    // Scroll hide/show topbar
     useEffect(() => {
         const handleScroll = () => {
             const current = window.pageYOffset;
@@ -84,13 +84,11 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Disable body scroll when menu open
     useEffect(() => {
         document.body.style.overflow = isMobileMenuOpen ? 'hidden' : '';
         return () => (document.body.style.overflow = '');
     }, [isMobileMenuOpen]);
 
-    // ESC closes menu/dropdown
     useEffect(() => {
         const onKey = (e) => {
             if (e.key === 'Escape') {
@@ -102,7 +100,6 @@ export default function Navbar() {
         return () => window.removeEventListener('keydown', onKey);
     }, []);
 
-    // Click outside closes dropdown
     useEffect(() => {
         const onDocClick = (e) => {
             if (navRef.current && !navRef.current.contains(e.target)) {
@@ -250,11 +247,17 @@ export default function Navbar() {
 
                         {/* ICONS */}
                         <div className="flex items-center gap-3 md:gap-4">
-                            {/* User Icon -> Login Page */}
                             <Link to="/login" className="text-gray-700 hover:text-blue-700 transition">
                                 <IoPersonCircleSharp size={24} />
                             </Link>
-
+                            <Link to="/cart" className="text-gray-700 hover:text-blue-700 transition relative">
+                                <FaCartPlus size={22} />
+                                {cartItems.length > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                        {cartItems.length}
+                                    </span>
+                                )}
+                            </Link>
                             <button
                                 aria-label="Menu"
                                 className="lg:hidden text-gray-700 hover:text-blue-700 transition"
@@ -267,7 +270,6 @@ export default function Navbar() {
                 </div>
             </div>
 
-            {/* Spacer to prevent content hidden behind fixed navbar */}
             <div style={{ height: `${TOPBAR_HEIGHT + 80}px` }} />
 
             {/* Mobile Menu */}

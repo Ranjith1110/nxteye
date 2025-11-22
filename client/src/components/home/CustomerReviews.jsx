@@ -68,11 +68,9 @@ const CustomerReviews = () => {
 
     return (
         <section className="py-20 bg-gradient-to-b from-blue-50 to-white relative overflow-hidden">
-            {/* Glow BG */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#5ce1e6]/20 blur-3xl opacity-50 rounded-full"></div>
 
             <div className="relative px-6 md:px-10 max-w-5xl mx-auto">
-                {/* Heading */}
                 <div className="text-center mb-14">
                     <h2 className="text-4xl font-extrabold text-[#03214a] tracking-wide">
                         Customer Reviews
@@ -84,7 +82,6 @@ const CustomerReviews = () => {
 
                 {/* Carousel */}
                 <div className="relative flex items-center justify-center">
-                    {/* Left Arrow */}
                     <button
                         onClick={prevReview}
                         className="absolute left-0 bg-white shadow-md hover:shadow-lg p-3 rounded-full border border-gray-200 hover:bg-gray-100 transition z-10"
@@ -92,7 +89,6 @@ const CustomerReviews = () => {
                         <ChevronLeft size={22} className="text-[#03214a]" />
                     </button>
 
-                    {/* Animated Review Card */}
                     <div className="w-full max-w-md mx-auto h-[260px] flex items-center justify-center">
                         <AnimatePresence custom={direction}>
                             <motion.div
@@ -105,19 +101,16 @@ const CustomerReviews = () => {
                                 transition={{ duration: 0.4 }}
                                 className="absolute w-full max-w-md p-8 rounded-3xl backdrop-blur-md bg-white/60 border border-white/20 shadow-xl"
                             >
-                                {/* Stars */}
                                 <div className="flex gap-1 mb-4">
                                     {Array.from({ length: reviews[currentIndex].stars }).map((_, i) => (
                                         <Star key={i} size={20} className="text-yellow-400 fill-yellow-400" />
                                     ))}
                                 </div>
 
-                                {/* Review */}
                                 <p className="text-gray-700 text-base leading-relaxed mb-6">
                                     "{reviews[currentIndex].review}"
                                 </p>
 
-                                {/* Name */}
                                 <h4 className="text-[#03214a] font-semibold text-lg text-right">
                                     — {reviews[currentIndex].name}
                                 </h4>
