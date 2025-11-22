@@ -9,8 +9,10 @@ import OrderSummary from "./admin/OrderSummary";
 import Ordered from "./admin/Ordered";
 import Delivered from "./admin/Delivered";
 import CustomerList from "./admin/CustomerList";
+import EyeGlasses from "./page/EyeGlasses";
+import SunGlasses from "./page/SunGlasses";
+import ContactLens from "./page/ContactLens";
 
-// 🔒 Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem("isAuthenticated");
   return isAuthenticated ? children : <Navigate to="/login" />;
@@ -20,6 +22,9 @@ const App = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/eyeglasses" element={<EyeGlasses />} />
+      <Route path="/sunglasses" element={<SunGlasses />} />
+      <Route path="/contact-lenses" element={<ContactLens />} />
       <Route path="/login" element={<Login />} />
       {/* Protected Dashboard Route */}
       <Route
