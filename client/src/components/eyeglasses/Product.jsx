@@ -6,7 +6,7 @@ import { useCart } from '../../context/CartContext';
 // MOCK DATA SECTION
 const products = [
     {
-        id: 1,
+        id: "eg-1",
         brand: "John Jacobs",
         details: "Size: Medium • John Jacobs",
         rating: 4.8,
@@ -18,7 +18,7 @@ const products = [
         image: vincent
     },
     {
-        id: 2,
+        id: "eg-2",
         brand: "Vincent Chase",
         details: "Size: Wide • Sleek Steel",
         rating: 4.8,
@@ -31,7 +31,7 @@ const products = [
         image: vincent
     },
     {
-        id: 3,
+        id: "eg-3",
         brand: "John Jacobs",
         details: "Size: Narrow • John Jacobs",
         rating: 4.9,

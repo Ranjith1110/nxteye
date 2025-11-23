@@ -2,21 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/dashboard/Layout';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { 
-    ChevronLeft, 
-    ChevronRight, 
-    Search, 
-    RefreshCw, 
-    Eye, 
-    X, 
-    FileText, 
-    ChevronUp,    // Imported
-    ChevronDown   // Imported
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, RefreshCw, Eye, X, FileText, ChevronUp, ChevronDown, Clock, Activity } from 'lucide-react';
 
-// Get API URL from environment variables
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
-const CUSTOMERS_PER_PAGE = 20; // Increased to 20 so "Show More" has data to show
+const CUSTOMERS_PER_PAGE = 20;
 
 const CustomerList = () => {
     const [customers, setCustomers] = useState([]);
@@ -27,105 +16,47 @@ const CustomerList = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-
-    // --- State for Filters ---
     const [purpose, setPurpose] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
-    // --- State for Show More / Less ---
     const [showAllItems, setShowAllItems] = useState(false);
-
-    // --- State for Modal ---
     const [showModal, setShowModal] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-    // --- Fetch Data Function ---
     const fetchCustomers = async (page, search, purpose, startDate, endDate) => {
         setLoading(true);
         setError(null);
-        // Reset expansion when fetching new data
         setShowAllItems(false); 
         try {
             const url = `${API_URL}/api/customers?page=${page}&limit=${CUSTOMERS_PER_PAGE}&search=${search}&purpose=${purpose}&startDate=${startDate}&endDate=${endDate}`;
-
             const res = await fetch(url);
-            if (!res.ok) {
-                throw new Error('Failed to fetch customers');
-            }
+            if (!res.ok) throw new Error('Failed to fetch customers');
             const data = await res.json();
-
             setCustomers(data.customers);
-            // Ensure these are numbers to prevent NaN errors
             setCurrentPage(Number(data.currentPage) || 1);
             setTotalPages(Number(data.totalPages) || 1);
-
         } catch (err) {
-            console.error(err);
             setError(err.message);
             toast.error(err.message || "Failed to load customer data.");
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
     };
 
-    // --- Effects ---
-    useEffect(() => {
-        fetchCustomers(1, "", "", "", "");
-    }, []);
+    useEffect(() => { fetchCustomers(1, "", "", "", ""); }, []);
 
-    // --- Event Handlers ---
-    const handleFilterSubmit = () => {
-        setCurrentPage(1);
-        fetchCustomers(1, searchTerm, purpose, startDate, endDate);
-    };
-
-    const handleReset = () => {
-        setSearchTerm("");
-        setPurpose("");
-        setStartDate("");
-        setEndDate("");
-        setCurrentPage(1);
-        fetchCustomers(1, "", "", "", "");
-        toast.info("Filters reset");
-    };
-
-    const handleSearchKeyPress = (e) => {
-        if (e.key === 'Enter') {
-            handleFilterSubmit();
-        }
-    };
-
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            fetchCustomers(newPage, searchTerm, purpose, startDate, endDate);
-        }
-    };
-
-    const handleOpenPreview = (customer) => {
-        setSelectedCustomer(customer);
-        setShowModal(true);
-    };
-
-    const handleCloseModal = () => {
-        setShowModal(false);
-        setSelectedCustomer(null);
-    };
+    const handleFilterSubmit = () => { setCurrentPage(1); fetchCustomers(1, searchTerm, purpose, startDate, endDate); };
+    const handleReset = () => { setSearchTerm(""); setPurpose(""); setStartDate(""); setEndDate(""); setCurrentPage(1); fetchCustomers(1, "", "", "", ""); toast.info("Filters reset"); };
+    const handleSearchKeyPress = (e) => { if (e.key === 'Enter') handleFilterSubmit(); };
+    const handlePageChange = (newPage) => { if (newPage >= 1 && newPage <= totalPages) fetchCustomers(newPage, searchTerm, purpose, startDate, endDate); };
+    
+    const handleOpenPreview = (customer) => { setSelectedCustomer(customer); setShowModal(true); };
+    const handleCloseModal = () => { setShowModal(false); setSelectedCustomer(null); };
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
-        try {
-            return new Date(dateString).toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        } catch (e) {
-            return dateString;
-        }
+        try { return new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }); } catch (e) { return dateString; }
     };
 
-    // --- Logic for slicing data (Show 10 or All) ---
     const displayedCustomers = showAllItems ? customers : customers.slice(0, 10);
 
     return (
@@ -137,80 +68,24 @@ const CustomerList = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
                     <div className="relative md:col-span-2">
                         <label className="block text-sm font-medium text-gray-600">Search Name/Mobile</label>
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyPress={handleSearchKeyPress}
-                            className="w-full mt-1 p-2 pl-10 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none"
-                        />
+                        <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyPress={handleSearchKeyPress} className="w-full mt-1 p-2 pl-10 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none" />
                         <Search size={18} className="absolute left-3 bottom-2.5 text-gray-400" />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-600">Purpose</label>
-                        <select
-                            value={purpose}
-                            onChange={(e) => setPurpose(e.target.value)}
-                            className="w-full mt-1 p-2 border rounded-md bg-white focus:ring-2 focus:ring-[#5ce1e6] outline-none"
-                        >
-                            <option value="">All Purposes</option>
-                            <option value="Purchase">Purchase</option>
-                            <option value="Inquiry">Inquiry</option>
-                            <option value="Eye Test">Eye Test</option>
-                            <option value="Consultation">Consultation</option>
-                            <option value="Contact Lens">Contact Lens</option>
-                            <option value="Service/Repair">Service/Repair</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className="w-full mt-1 p-2 border rounded-md bg-white focus:ring-2 focus:ring-[#5ce1e6] outline-none"><option value="">All Purposes</option><option value="Purchase">Purchase</option><option value="Inquiry">Inquiry</option><option value="Eye Test">Eye Test</option><option value="Consultation">Consultation</option><option value="Contact Lens">Contact Lens</option><option value="Service/Repair">Service/Repair</option><option value="Other">Other</option></select>
                     </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-600">From Date</label>
-                        <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-600">To Date</label>
-                        <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none"
-                        />
-                    </div>
+                    <div><label className="block text-sm font-medium text-gray-600">From Date</label><input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none" /></div>
+                    <div><label className="block text-sm font-medium text-gray-600">To Date</label><input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full mt-1 p-2 border rounded-md focus:ring-2 focus:ring-[#5ce1e6] outline-none" /></div>
                 </div>
 
                 <div className="flex justify-end gap-2 mb-6">
-                    <button
-                        onClick={handleFilterSubmit}
-                        className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-bold hover:bg-[#03214a] hover:text-white transition shadow-sm"
-                    >
-                        Apply Filters
-                    </button>
-                    <button
-                        onClick={handleReset}
-                        className="flex items-center gap-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition"
-                    >
-                        <RefreshCw size={16} />
-                        Reset
-                    </button>
+                    <button onClick={handleFilterSubmit} className="bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-full font-bold hover:bg-[#03214a] hover:text-white transition shadow-sm">Apply Filters</button>
+                    <button onClick={handleReset} className="flex items-center gap-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition"><RefreshCw size={16} /> Reset</button>
                 </div>
 
                 {/* --- Data Table --- */}
-                {loading ? (
-                    <div className="text-center py-10 text-gray-500 animate-pulse">Loading customer data...</div>
-                ) : error ? (
-                    <div className="text-center py-10 text-red-600">{error}</div>
-                ) : customers.length === 0 ? (
-                    <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg">No customers found matching filters.</div>
-                ) : (
+                {loading ? <div className="text-center py-10 text-gray-500 animate-pulse">Loading customer data...</div> : error ? <div className="text-center py-10 text-red-600">{error}</div> : customers.length === 0 ? <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg">No customers found matching filters.</div> : (
                     <>
                         <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
                             <table className="min-w-full text-sm text-left text-gray-700">
@@ -228,127 +103,91 @@ const CustomerList = () => {
                                 <tbody className="divide-y divide-gray-100">
                                     {displayedCustomers.map((customer, index) => (
                                         <tr key={customer._id} className="bg-white hover:bg-blue-50 transition-colors">
-                                            <td className="px-4 py-3 text-center border-b font-medium text-gray-500">
-                                                {(Number(currentPage || 1) - 1) * CUSTOMERS_PER_PAGE + index + 1}
-                                            </td>
-                                            <td className="px-4 py-3 font-semibold text-gray-800  border-b">{customer.customerName}</td>
-                                            <td className="px-4 py-3 text-gray-600  border-b">{customer.mobileNumber}</td>
-                                            <td className="px-4 py-3 text-gray-500 max-w-xs truncate  border-b" title={customer.address}>
-                                                {customer.address || "-"}
-                                            </td>
-                                            <td className="px-4 py-3  border-b">
-                                                <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">
-                                                    {customer.purposeOfVisit || "N/A"}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-500  border-b">{formatDate(customer.createdAt)}</td>
-                                            <td className="px-4 py-3 text-center  border-b">
-                                                <button 
-                                                    onClick={() => handleOpenPreview(customer)}
-                                                    className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2 rounded-full transition"
-                                                    title="View Clinical Readings"
-                                                >
-                                                    <Eye size={18} />
-                                                </button>
+                                            <td className="px-4 py-3 text-center border-b font-medium text-gray-500">{(Number(currentPage || 1) - 1) * CUSTOMERS_PER_PAGE + index + 1}</td>
+                                            <td className="px-4 py-3 font-semibold text-gray-800 border-b">{customer.customerName}</td>
+                                            <td className="px-4 py-3 text-gray-600 border-b">{customer.mobileNumber}</td>
+                                            <td className="px-4 py-3 text-gray-500 max-w-xs truncate border-b" title={customer.address}>{customer.address || "-"}</td>
+                                            <td className="px-4 py-3 border-b"><span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-600">{customer.purposeOfVisit || "N/A"}</span></td>
+                                            <td className="px-4 py-3 text-gray-500 border-b">{formatDate(customer.createdAt)}</td>
+                                            <td className="px-4 py-3 text-center border-b">
+                                                <button onClick={() => handleOpenPreview(customer)} className="text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 p-2 rounded-full transition" title="View Clinical Readings"><Eye size={18} /></button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-
-                        {/* --- Show More / Show Less Button --- */}
                         {customers.length > 10 && (
                             <div className="flex justify-center mt-4">
-                                <button
-                                    onClick={() => setShowAllItems(!showAllItems)}
-                                    className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md transition font-medium text-sm"
-                                >
-                                    {showAllItems ? (
-                                        <>
-                                            Show Less <ChevronUp size={18} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            Show More ({customers.length - 10} more items) <ChevronDown size={18} />
-                                        </>
-                                    )}
-                                </button>
+                                <button onClick={() => setShowAllItems(!showAllItems)} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md transition font-medium text-sm">{showAllItems ? <>Show Less <ChevronUp size={18} /></> : <>Show More ({customers.length - 10} more items) <ChevronDown size={18} /></>}</button>
                             </div>
                         )}
-
-                        {/* --- Pagination --- */}
                         {totalPages > 1 && (
                             <div className="flex justify-between items-center mt-6">
-                                <button
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="flex items-center gap-1 bg-white border text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-50 disabled:opacity-50 transition shadow-sm"
-                                >
-                                    <ChevronLeft size={16} /> Prev
-                                </button>
-
-                                <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-
-                                <button
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="flex items-center gap-1 bg-white border text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-50 disabled:opacity-50 transition shadow-sm"
-                                >
-                                    Next <ChevronRight size={16} />
-                                </button>
+                                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="flex items-center gap-1 bg-white border text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-50 disabled:opacity-50 transition shadow-sm"><ChevronLeft size={16} /> Prev</button>
+                                <span className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Page {currentPage} of {totalPages}</span>
+                                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="flex items-center gap-1 bg-white border text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-50 disabled:opacity-50 transition shadow-sm">Next <ChevronRight size={16} /></button>
                             </div>
                         )}
                     </>
                 )}
             </div>
 
-            {/* --- CLINICAL READINGS MODAL --- */}
+            {/* --- CLINICAL READINGS MODAL (COMPARISON VIEW) --- */}
             {showModal && selectedCustomer && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-                        <div className="bg-[#03214a] text-white p-4 flex justify-between items-center">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+                        <div className="bg-[#03214a] text-white p-4 flex justify-between items-center shadow-lg z-10">
                             <div>
-                                <h3 className="text-lg font-bold">Clinical History</h3>
-                                <p className="text-xs text-blue-200">Patient: {selectedCustomer.customerName} | {selectedCustomer.mobileNumber}</p>
+                                <h3 className="text-lg font-bold flex items-center gap-2"><Activity size={18}/> Clinical History</h3>
+                                <p className="text-xs text-blue-200 mt-1">Patient: {selectedCustomer.customerName} | {selectedCustomer.mobileNumber}</p>
                             </div>
-                            <button onClick={handleCloseModal} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition">
-                                <X size={20} />
-                            </button>
+                            <button onClick={handleCloseModal} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition"><X size={20} /></button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto bg-gray-50 flex-grow">
+                        <div className="p-6 overflow-y-auto bg-gray-100 flex-grow">
                             {selectedCustomer.clinicalHistory && selectedCustomer.clinicalHistory.length > 0 ? (
-                                <div className="space-y-6">
-                                    {[...selectedCustomer.clinicalHistory].reverse().map((entry, idx) => (
-                                        <div key={idx} className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                                            <div className="bg-gray-100 px-4 py-2 border-b flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-xs font-bold uppercase bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                                                        {entry.testType || "Unknown"}
-                                                    </span>
-                                                    <span className="text-sm font-medium text-gray-700">Date: {entry.visitDate}</span>
-                                                </div>
-                                                <span className="text-xs text-gray-500">#{selectedCustomer.clinicalHistory.length - idx}</span>
-                                            </div>
+                                <div className="space-y-8 relative">
+                                    {/* Vertical Line for Timeline */}
+                                    <div className="absolute left-6 top-4 bottom-0 w-0.5 bg-gray-300 z-0"></div>
 
-                                            <div className="p-4">
-                                                {entry.testType === "Glasses" ? (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <ReadingTable title="Right Eye (OD)" data={entry.readings?.right} color="blue" />
-                                                        <ReadingTable title="Left Eye (OS)" data={entry.readings?.left} color="blue" />
+                                    {[...selectedCustomer.clinicalHistory].reverse().map((entry, idx) => {
+                                        const isLatest = idx === 0;
+                                        return (
+                                            <div key={idx} className={`relative pl-14 transition-all ${isLatest ? 'scale-100' : 'scale-95 opacity-80 hover:opacity-100 hover:scale-100'}`}>
+                                                {/* Timeline Dot */}
+                                                <div className={`absolute left-4 top-5 w-4 h-4 rounded-full z-10 border-2 border-white ${isLatest ? 'bg-blue-600 shadow-blue-300 shadow-lg scale-125' : 'bg-gray-400'}`}></div>
+
+                                                <div className={`bg-white border rounded-xl shadow-sm overflow-hidden ${isLatest ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'}`}>
+                                                    <div className={`px-4 py-3 border-b flex justify-between items-center ${isLatest ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            {isLatest && <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Latest Visit</span>}
+                                                            {!isLatest && <span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">History</span>}
+                                                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                                                <Clock size={14} className="text-gray-500" />
+                                                                {entry.visitDate || entry.appointmentDetails?.checkupDate}
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-bold uppercase text-gray-500 tracking-wide">{entry.testType}</span>
                                                     </div>
-                                                ) : (
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <CLReadingTable title="Right Eye (OD)" data={entry.readings?.right} />
-                                                        <CLReadingTable title="Left Eye (OS)" data={entry.readings?.left} />
+
+                                                    <div className="p-4">
+                                                        {entry.testType === "Glasses" ? (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <ReadingTable title="Right Eye (OD)" data={entry.readings?.right} color={isLatest ? "blue" : "gray"} />
+                                                                <ReadingTable title="Left Eye (OS)" data={entry.readings?.left} color={isLatest ? "blue" : "gray"} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <CLReadingTable title="Right Eye (OD)" data={entry.readings?.right} color={isLatest ? "green" : "gray"} />
+                                                                <CLReadingTable title="Left Eye (OS)" data={entry.readings?.left} color={isLatest ? "green" : "gray"} />
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center h-48 text-gray-400">
@@ -357,54 +196,43 @@ const CustomerList = () => {
                                 </div>
                             )}
                         </div>
-
-                        <div className="p-4 border-t bg-white flex justify-end">
-                            <button onClick={handleCloseModal} className="px-5 py-2 bg-gray-200 text-gray-800 rounded-full text-sm font-medium hover:bg-gray-300 transition">
-                                Close
-                            </button>
-                        </div>
+                        <div className="p-4 border-t bg-white flex justify-end"><button onClick={handleCloseModal} className="px-5 py-2 bg-gray-200 text-gray-800 rounded-full text-sm font-medium hover:bg-gray-300 transition">Close</button></div>
                     </div>
                 </div>
             )}
-
             <ToastContainer position="top-right" autoClose={2000} />
         </Layout>
     );
 };
 
-// --- Sub-Components ---
 const ReadingTable = ({ title, data, color }) => {
     if (!data) return null;
     return (
-        <div className={`border border-${color}-100 rounded-lg overflow-hidden`}>
-            <div className={`bg-${color}-50 px-3 py-1 text-xs font-bold text-${color}-800 uppercase border-b border-${color}-100`}>
-                {title}
-            </div>
+        <div className={`border border-${color}-200 rounded-lg overflow-hidden`}>
+            <div className={`bg-${color}-50 px-3 py-1 text-xs font-bold text-${color}-800 uppercase border-b border-${color}-100`}>{title}</div>
             <div className="grid grid-cols-3 gap-y-2 gap-x-4 p-3 text-xs">
-                <div><span className="text-gray-400 block text-[10px]">SPH</span> <span className="font-bold">{data.SPH}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">CYL</span> <span className="font-bold">{data.CYL}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">AXIS</span> <span className="font-bold">{data.AXIS}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">ADD</span> <span className="font-bold">{data.ADD}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">PD</span> <span className="font-bold">{data.PD}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">VA</span> <span className="font-bold">{data.DistanceVA}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">SPH</span> <span className="font-bold text-gray-800">{data.SPH}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">CYL</span> <span className="font-bold text-gray-800">{data.CYL}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">AXIS</span> <span className="font-bold text-gray-800">{data.AXIS}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">ADD</span> <span className="font-bold text-gray-800">{data.ADD}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">PD</span> <span className="font-bold text-gray-800">{data.PD}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">VA</span> <span className="font-bold text-gray-800">{data.DistanceVA}</span></div>
             </div>
         </div>
     );
 };
 
-const CLReadingTable = ({ title, data }) => {
+const CLReadingTable = ({ title, data, color }) => {
     if (!data) return null;
     return (
-        <div className="border border-green-100 rounded-lg overflow-hidden">
-            <div className="bg-green-50 px-3 py-1 text-xs font-bold text-green-800 uppercase border-b border-green-100">
-                {title}
-            </div>
+        <div className={`border border-${color}-200 rounded-lg overflow-hidden`}>
+            <div className={`bg-${color}-50 px-3 py-1 text-xs font-bold text-${color}-800 uppercase border-b border-${color}-100`}>{title}</div>
             <div className="grid grid-cols-3 gap-y-2 gap-x-4 p-3 text-xs">
-                <div><span className="text-gray-400 block text-[10px]">PWR</span> <span className="font-bold">{data.SPH}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">CYL</span> <span className="font-bold">{data.CYL}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">AXIS</span> <span className="font-bold">{data.AXIS}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">BC</span> <span className="font-bold">{data.BC}</span></div>
-                <div><span className="text-gray-400 block text-[10px]">DIA</span> <span className="font-bold">{data.DIA}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">PWR</span> <span className="font-bold text-gray-800">{data.SPH}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">CYL</span> <span className="font-bold text-gray-800">{data.CYL}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">AXIS</span> <span className="font-bold text-gray-800">{data.AXIS}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">BC</span> <span className="font-bold text-gray-800">{data.BC}</span></div>
+                <div><span className="text-gray-400 block text-[10px]">DIA</span> <span className="font-bold text-gray-800">{data.DIA}</span></div>
             </div>
         </div>
     );

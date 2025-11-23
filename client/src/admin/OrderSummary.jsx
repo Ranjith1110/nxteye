@@ -28,19 +28,15 @@ const safeAmount = (value) => {
 const numberToWords = (num) => {
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
     if ((num = num.toString()).length > 9) return 'Overflow';
-
     const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
     if (!n) return;
-
     let str = '';
     str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
     str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
     str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
     str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
     str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Only ' : '';
-
     return str || 'Zero Only';
 };
 
@@ -119,7 +115,7 @@ const OrderSummary = () => {
         } catch { }
     };
 
-    // --- AUTO-FETCH CUSTOMER ---
+    // --- AUTO-FETCH CUSTOMER & HANDLE HISTORY ---
     const handleMobileBlur = async () => {
         if (customer.mobileNumber && customer.mobileNumber.length >= 10) {
             try {
@@ -137,13 +133,17 @@ const OrderSummary = () => {
                         purposeOfVisit: foundCust.purposeOfVisit || ""
                     }));
 
-                    toast.success("Customer Found! Details Loaded.");
+                    toast.success("Existing Customer Found!");
 
                     if (lastClinicalEntry) {
+                        // CRITICAL LOGIC: 
+                        // We load the PREVIOUS readings to save typing time, 
+                        // BUT we ensure the 'checkupDate' is TODAY so it saves as a NEW entry.
                         setAppointment(prev => ({
                             ...prev,
                             customerType: "Returning",
-                            ...lastClinicalEntry.appointmentDetails
+                            ...lastClinicalEntry.appointmentDetails,
+                            checkupDate: new Date().toISOString().split('T')[0] // FORCE TODAY
                         }));
 
                         if (lastClinicalEntry.testType === "Glasses") {
@@ -153,7 +153,7 @@ const OrderSummary = () => {
                             setPrescriptionMode("ContactLens");
                             setClReadings(lastClinicalEntry.readings);
                         }
-                        toast.info("Last Eye Test Loaded");
+                        toast.info("Previous readings loaded for reference. Please update for today's visit.");
                     }
                 }
             } catch (e) { }
@@ -185,7 +185,6 @@ const OrderSummary = () => {
     }, [cart, discount, advance]);
 
     // --- DATA MAPPING FOR TEMPLATE ---
-    // This constructs a 'bill' object exactly like the one in Ordered.jsx
     const getBillData = () => ({
         invoiceNo,
         date: new Date().toLocaleString("en-IN"),
@@ -199,7 +198,7 @@ const OrderSummary = () => {
         discountAmount: totals.discountAmount,
         advance: advance || 0,
         remaining: totals.remaining,
-        orderStatus: orderStatus // Passing status to handle Delivered/Ordered toggle
+        orderStatus: orderStatus
     });
 
     // --- HANDLERS ---
@@ -289,7 +288,7 @@ const OrderSummary = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) toast.success("Clinical Entry Saved!");
+            if (res.ok) toast.success("Clinical Entry Added to History!");
             else toast.error("Failed to save");
         } catch (e) { toast.error("Server Error"); }
     };
@@ -298,6 +297,7 @@ const OrderSummary = () => {
         setCustomer({ customerName: "", mobileNumber: "", gender: "", dob: "", address: "", purposeOfVisit: "" });
         setCart([]);
         setAdvance(""); setDiscount(0); setDeliveryDate("");
+        setAppointment({ checkupDate: new Date().toISOString().split('T')[0], expiryDate: "", customerType: "New" });
         setOrderStatus({ ordered: true, delivered: false });
     };
 
@@ -328,9 +328,9 @@ const OrderSummary = () => {
                             position: absolute;
                             left: 0;
                             top: 0;
-                            width: 210mm;
+                            width: 100%;
                             height: 297mm; /* Exact A4 Height */
-                            padding: 15mm;
+                            padding: 20px;
                             background: white;
                             z-index: 9999;
                             font-size: 12px;
@@ -339,7 +339,6 @@ const OrderSummary = () => {
                     }
                 `}
             </style>
-
             <div className="bg-white shadow-md rounded-lg p-6 relative">
                 <div className="flex justify-between items-center bg-white">
                     <h2 className="text-2xl font-bold text-gray-800">Order Summary</h2>
@@ -369,9 +368,12 @@ const OrderSummary = () => {
                     <div className="bg-blue-50 p-5 rounded-lg border border-blue-200 relative">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold text-blue-800 uppercase tracking-wider">Clinical Entry</h3>
-                            <div className="flex bg-white rounded-lg shadow-sm p-1">
-                                <button onClick={() => setPrescriptionMode("Glasses")} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition ${prescriptionMode === "Glasses" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"}`}><Glasses size={14} /> Glasses</button>
-                                <button onClick={() => setPrescriptionMode("ContactLens")} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition ${prescriptionMode === "ContactLens" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"}`}><Eye size={14} /> Contact Lens</button>
+                            <div className="flex gap-4 items-center">
+                                <input type="date" className="border rounded px-2 py-1 text-xs" value={appointment.checkupDate} onChange={e => setAppointment({ ...appointment, checkupDate: e.target.value })} />
+                                <div className="flex bg-white rounded-lg shadow-sm p-1">
+                                    <button onClick={() => setPrescriptionMode("Glasses")} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition ${prescriptionMode === "Glasses" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"}`}><Glasses size={14} /> Glasses</button>
+                                    <button onClick={() => setPrescriptionMode("ContactLens")} className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-bold transition ${prescriptionMode === "ContactLens" ? "bg-blue-600 text-white" : "text-gray-500 hover:bg-gray-100"}`}><Eye size={14} /> Contact Lens</button>
+                                </div>
                             </div>
                         </div>
                         <div className="space-y-4 mb-6">
@@ -525,31 +527,14 @@ const OrderSummary = () => {
                     {/* ACTIONS */}
                     <div className="flex justify-end gap-3 pt-4">
                         <button onClick={handleReset} className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition flex items-center gap-2"><RefreshCw size={16} /> Full Reset</button>
-
-                        <button
-                            onClick={() => setShowPreview(true)}
-                            disabled={cart.length === 0}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${cart.length === 0 ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                        >
-                            <Eye size={16} /> Preview
-                        </button>
-
-                        <button
-                            onClick={handlePrint}
-                            disabled={cart.length === 0}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${cart.length === 0 ? 'bg-gray-200 text-gray-400' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
-                        >
-                            <Printer size={16} /> Print
-                        </button>
-
-                        {cart.length > 0 && (
-                            <button onClick={handleSaveBill} className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2"><Save size={18} /> Save Sale Bill</button>
-                        )}
+                        <button onClick={() => setShowPreview(true)} disabled={cart.length === 0} className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${cart.length === 0 ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}><Eye size={16} /> Preview</button>
+                        <button onClick={handlePrint} disabled={cart.length === 0} className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${cart.length === 0 ? 'bg-gray-200 text-gray-400' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}><Printer size={16} /> Print</button>
+                        {cart.length > 0 && (<button onClick={handleSaveBill} className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2"><Save size={18} /> Save Sale Bill</button>)}
                     </div>
                 </div>
                 <ToastContainer position="top-right" autoClose={2000} />
 
-                {/* --- HIDDEN INVOICE FOR PRINTING ONLY (EXACT COPY FROM ORDERED.JSX) --- */}
+                {/* --- HIDDEN INVOICE FOR PRINTING --- */}
                 <div id="printable-invoice" style={{ display: 'none' }}>
                     <InvoiceTemplate bill={getBillData()} />
                 </div>
@@ -566,7 +551,6 @@ const OrderSummary = () => {
                                 </div>
                             </div>
                             <div className="overflow-y-auto p-8 bg-gray-200">
-                                {/* Using shadow-xl to show the A4 paper boundary */}
                                 <div className="shadow-xl mx-auto max-w-[210mm]">
                                     <InvoiceTemplate bill={getBillData()} />
                                 </div>
@@ -574,25 +558,17 @@ const OrderSummary = () => {
                         </div>
                     </div>
                 )}
-
             </div>
         </Layout>
     );
 };
 
-// --- EXACT INVOICE TEMPLATE FROM ORDERED.JSX ---
-// Minor modification: Added check for bill.orderStatus for the badge, 
-// otherwise it defaults to "DELIVERED" if orderStatus is missing (for safety).
+// --- INVOICE TEMPLATE ---
 const InvoiceTemplate = ({ bill }) => {
     if (!bill) return null;
-
-    // Determine status to display. In Ordered.jsx it was hardcoded to Delivered.
-    // Here we respect the checkbox if present.
     const isDelivered = bill.orderStatus ? bill.orderStatus.delivered : true;
-    
     return (
         <div className="invoice-box bg-white text-black font-sans text-sm">
-            {/* HEADER */}
             <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 mb-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-blue-900 uppercase tracking-wide">NxtEye Optical</h1>
@@ -606,8 +582,6 @@ const InvoiceTemplate = ({ bill }) => {
                     <p className="text-gray-700">Date: <span className="font-bold">{bill.date.split(',')[0]}</span></p>
                 </div>
             </div>
-
-            {/* CUSTOMER INFO */}
             <div className="mb-6 border border-gray-300 p-4 rounded">
                 <div className="flex justify-between">
                     <div className="w-1/2">
@@ -619,15 +593,10 @@ const InvoiceTemplate = ({ bill }) => {
                     <div className="w-1/2 text-right">
                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Payment Details:</h3>
                         <p className="text-gray-700">Mode: {bill.paymentMethod}</p>
-                        
-                        <p className={`mt-2 inline-block px-3 py-1 rounded font-bold border ${isDelivered ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>
-                            STATUS: {isDelivered ? "DELIVERED" : "ORDERED"}
-                        </p>
+                        <p className={`mt-2 inline-block px-3 py-1 rounded font-bold border ${isDelivered ? 'bg-green-100 text-green-800 border-green-300' : 'bg-yellow-100 text-yellow-800 border-yellow-300'}`}>STATUS: {isDelivered ? "DELIVERED" : "ORDERED"}</p>
                     </div>
                 </div>
             </div>
-
-            {/* ITEMS TABLE */}
             <div className="mb-2">
                 <table className="w-full border-collapse border border-gray-300 text-sm">
                     <thead className="bg-gray-100 text-gray-700">
@@ -644,8 +613,8 @@ const InvoiceTemplate = ({ bill }) => {
                     <tbody>
                         {bill.items.map((item, idx) => {
                             const price = Number(item.itemPrice);
-                            const cgstVal = price * (Number(item.cgst)/100);
-                            const sgstVal = price * (Number(item.sgst)/100);
+                            const cgstVal = price * (Number(item.cgst) / 100);
+                            const sgstVal = price * (Number(item.sgst) / 100);
                             const total = price + cgstVal + sgstVal;
                             return (
                                 <tr key={idx}>
@@ -659,83 +628,35 @@ const InvoiceTemplate = ({ bill }) => {
                                 </tr>
                             )
                         })}
-                        {/* Fill empty rows to maintain height if fewer than 5 items */}
                         {bill.items.length < 5 && Array.from({ length: 5 - bill.items.length }).map((_, i) => (
-                             <tr key={`empty-${i}`}>
-                                <td className="border border-gray-300 p-3">&nbsp;</td>
-                                <td className="border border-gray-300 p-3"></td>
-                                <td className="border border-gray-300 p-3"></td>
-                                <td className="border border-gray-300 p-3"></td>
-                                <td className="border border-gray-300 p-3"></td>
-                                <td className="border border-gray-300 p-3"></td>
-                                <td className="border border-gray-300 p-3"></td>
-                            </tr>
+                            <tr key={`empty-${i}`}><td className="border border-gray-300 p-3">&nbsp;</td><td className="border border-gray-300 p-3"></td><td className="border border-gray-300 p-3"></td><td className="border border-gray-300 p-3"></td><td className="border border-gray-300 p-3"></td><td className="border border-gray-300 p-3"></td><td className="border border-gray-300 p-3"></td></tr>
                         ))}
                     </tbody>
                 </table>
             </div>
-
-            {/* TOTALS SECTION */}
             <div className="flex justify-between items-start mt-4">
                 <div className="w-1/2 pr-8">
                     <div className="border-t border-b border-gray-300 py-2 my-2">
                         <p className="text-xs font-bold text-gray-500 uppercase">Amount in Words:</p>
-                        <p className="text-sm font-semibold italic capitalize mt-1">
-                            {convertAmountToWords(bill.grandTotal)}
-                        </p>
+                        <p className="text-sm font-semibold italic capitalize mt-1">{convertAmountToWords(bill.grandTotal)}</p>
                     </div>
-                    <div className="mt-6 text-xs text-gray-600">
-                        <p className="font-bold">Terms & Conditions:</p>
-                        <ul className="list-disc pl-4 mt-1 space-y-1">
-                            <li>Goods once sold cannot be returned or exchanged.</li>
-                            <li>All disputes are subject to Ramnad jurisdiction.</li>
-                            <li>This is a computer generated invoice.</li>
-                        </ul>
-                    </div>
+                    <div className="mt-6 text-xs text-gray-600"><p className="font-bold">Terms & Conditions:</p><ul className="list-disc pl-4 mt-1 space-y-1"><li>Goods once sold cannot be returned or exchanged.</li><li>All disputes are subject to Ramnad jurisdiction.</li><li>This is a computer generated invoice.</li></ul></div>
                 </div>
-
                 <div className="w-1/2 pl-8">
                     <div className="space-y-2 text-right text-sm">
                         <div className="flex justify-between text-gray-600"><span>Subtotal:</span> <span>₹{safeAmount(bill.subTotal)}</span></div>
                         <div className="flex justify-between text-gray-600"><span>CGST:</span> <span>₹{safeAmount(bill.totalCgstAmount)}</span></div>
                         <div className="flex justify-between text-gray-600"><span>SGST:</span> <span>₹{safeAmount(bill.totalSgstAmount)}</span></div>
-                        
-                        {Number(bill.discountAmount) > 0 && (
-                            <div className="flex justify-between text-red-600"><span>Discount:</span> <span>-₹{safeAmount(bill.discountAmount)}</span></div>
-                        )}
-                        
-                        <div className="flex justify-between font-bold text-lg border-t border-gray-400 pt-2 mt-2 text-black">
-                            <span>Net Amount:</span> <span>₹{safeAmount(bill.grandTotal)}</span>
-                        </div>
-
-                        <div className="flex justify-between text-green-700 border-b border-gray-200 pb-2">
-                            <span>Advance Paid:</span> <span>-₹{safeAmount(bill.advance)}</span>
-                        </div>
-
-                        {/* FINAL COLLECTION AMOUNT */}
-                        <div className="bg-gray-100 p-2 rounded mt-2 border border-gray-300">
-                            <div className="flex justify-between font-extrabold text-xl text-blue-900">
-                                <span>Balance To Pay:</span> <span>₹{safeAmount(bill.remaining)}</span>
-                            </div>
-                        </div>
+                        {Number(bill.discountAmount) > 0 && (<div className="flex justify-between text-red-600"><span>Discount:</span> <span>-₹{safeAmount(bill.discountAmount)}</span></div>)}
+                        <div className="flex justify-between font-bold text-lg border-t border-gray-400 pt-2 mt-2 text-black"><span>Net Amount:</span> <span>₹{safeAmount(bill.grandTotal)}</span></div>
+                        <div className="flex justify-between text-green-700 border-b border-gray-200 pb-2"><span>Advance Paid:</span> <span>-₹{safeAmount(bill.advance)}</span></div>
+                        <div className="bg-gray-100 p-2 rounded mt-2 border border-gray-300"><div className="flex justify-between font-extrabold text-xl text-blue-900"><span>Balance To Pay:</span> <span>₹{safeAmount(bill.remaining)}</span></div></div>
                     </div>
                 </div>
             </div>
-
-            {/* FOOTER / SIGNATURE */}
             <div className="mt-auto pt-12">
-                <div className="flex justify-between items-end">
-                    <div className="text-center">
-                        <p className="text-gray-400 text-xs">Customer Signature</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="font-bold text-sm border-t border-gray-400 px-8 pt-1">Authorized Signatory</p>
-                        <p className="text-xs text-gray-500">For NxtEye Optical</p>
-                    </div>
-                </div>
-                <div className="text-center text-xs text-gray-400 mt-6 border-t pt-2">
-                    Thank you for your patronage!
-                </div>
+                <div className="flex justify-between items-end"><div className="text-center"><p className="text-gray-400 text-xs">Customer Signature</p></div><div className="text-center"><p className="font-bold text-sm border-t border-gray-400 px-8 pt-1">Authorized Signatory</p><p className="text-xs text-gray-500">For NxtEye Optical</p></div></div>
+                <div className="text-center text-xs text-gray-400 mt-6 border-t pt-2">Thank you for your patronage!</div>
             </div>
         </div>
     );

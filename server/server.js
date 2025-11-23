@@ -7,6 +7,7 @@ import itemRoutes from "./routes/itemRoutes.js";
 import orderSummaryRoutes from "./routes/orderSummaryRoutes.js";
 import customerRoutes from "./routes/customerRoutes.js";
 import purchaseBillRoutes from "./routes/purchaseBillRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -24,6 +25,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/billing", orderSummaryRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/purchase-bills", purchaseBillRoutes);
+app.use("/api/orders", orderRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

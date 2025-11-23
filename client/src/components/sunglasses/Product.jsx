@@ -6,7 +6,7 @@ import { useCart } from '../../context/CartContext';
 // MOCK DATA SECTION
 const products = [
     {
-        id: 1,
+        id: "sg-1",
         brand: "Sun demo 1",
         details: "Size: Medium • John Jacobs",
         rating: 4.8,
@@ -18,7 +18,7 @@ const products = [
         image: vincent
     },
     {
-        id: 2,
+        id: "sg-2",
         brand: "Sun demo 2",
         details: "Size: Wide • Sleek Steel",
         rating: 4.8,
@@ -31,7 +31,7 @@ const products = [
         image: vincent
     },
     {
-        id: 3,
+        id: "sg-3",
         brand: "Sun demo 3",
         details: "Size: Narrow • John Jacobs",
         rating: 4.9,

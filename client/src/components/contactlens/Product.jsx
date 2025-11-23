@@ -5,7 +5,7 @@ import { useCart } from '../../context/CartContext';
 
 const products = [
     {
-        id: 1,
+        id: "cl-1",
         brand: "Demo",
         details: "Size: Medium • John Jacobs",
         rating: 4.8,
@@ -17,7 +17,7 @@ const products = [
         image: vincent
     },
     {
-        id: 2,
+        id: "cl-2",
         brand: "Demo 2",
         details: "Size: Wide • Sleek Steel",
         rating: 4.8,
@@ -30,7 +30,7 @@ const products = [
         image: vincent
     },
     {
-        id: 3,
+        id: "cl-3",
         brand: "Demo 3",
         details: "Size: Narrow • John Jacobs",
         rating: 4.9,

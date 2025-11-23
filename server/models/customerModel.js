@@ -1,11 +1,10 @@
 import mongoose from "mongoose";
 
-// Sub-schema for Clinical Entries
 const clinicalEntrySchema = new mongoose.Schema({
     visitDate: String,
-    testType: String, // Glasses / Contact Lens
+    testType: String,
     appointmentDetails: Object,
-    readings: Object, // Stores either glassReadings or clReadings
+    readings: Object,
 }, { _id: true });
 
 const customerSchema = new mongoose.Schema({
@@ -16,7 +15,6 @@ const customerSchema = new mongoose.Schema({
     address: { type: String },
     purposeOfVisit: { type: String },
     
-    // Array to store history of eye tests
     clinicalHistory: [clinicalEntrySchema], 
     
     createdAt: { type: Date, default: Date.now },
