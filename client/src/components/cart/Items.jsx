@@ -105,7 +105,7 @@ const Items = () => {
                         <div className="lg:col-span-2 space-y-4">
                             {cartItems.map((item, index) => (
                                 <div key={`${item.id}-${index}`} className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition hover:shadow-md">
-                                    <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center p-2">
+                                    <div className="w-24 h-24 shrink-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center p-2">
                                         <img 
                                             src={item.image} 
                                             alt={item.brand} 
@@ -114,7 +114,7 @@ const Items = () => {
                                         />
                                     </div>
 
-                                    <div className="flex-grow text-center sm:text-left">
+                                    <div className="grow text-center sm:text-left">
                                         <h3 className="font-bold text-gray-800 text-lg">{item.brand}</h3>
                                         <p className="text-gray-500 text-sm">{item.details}</p>
                                         <p className="text-teal-600 font-bold mt-1 text-lg">₹{item.price}</p>

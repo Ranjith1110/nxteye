@@ -145,7 +145,7 @@ const CustomerList = () => {
                             <button onClick={handleCloseModal} className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition"><X size={20} /></button>
                         </div>
 
-                        <div className="p-6 overflow-y-auto bg-gray-100 flex-grow">
+                        <div className="p-6 overflow-y-auto bg-gray-100 grow">
                             {selectedCustomer.clinicalHistory && selectedCustomer.clinicalHistory.length > 0 ? (
                                 <div className="space-y-8 relative">
                                     {/* Vertical Line for Timeline */}

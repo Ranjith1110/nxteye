@@ -71,9 +71,9 @@ const ProductCard = ({ product }) => {
                     className="w-[85%] object-contain transform -rotate-6 scale-95 transition-transform duration-500 ease-in-out group-hover:rotate-0 group-hover:scale-105"
                 />
 
-                <div className="absolute bottom-0 left-0 bg-gray-50 border border-gray-100 rounded-full px-2 py-[2px] flex items-center gap-1 shadow-sm">
+                <div className="absolute bottom-0 left-0 bg-gray-50 border border-gray-100 rounded-full px-2 py-2px flex items-center gap-1 shadow-sm">
                     <span className="font-bold text-[13px] text-gray-800">{product.rating}</span>
-                    <FaStar className="text-teal-500 text-[10px] mb-[1px]" />
+                    <FaStar className="text-teal-500 text-[10px] mb-1px" />
                     <span className="text-[11px] text-gray-500 border-l border-gray-300 pl-1 ml-1">{product.reviews}</span>
                 </div>
             </div>
@@ -84,22 +84,22 @@ const ProductCard = ({ product }) => {
 
                 <div className="flex items-end justify-between">
 
-                    <div className="flex items-baseline gap-[6px]">
+                    <div className="flex items-baseline gap-6px">
                         <span className="text-[17px] font-bold text-gray-900">₹{product.price}</span>
                         <span className="text-[13px] text-gray-400 line-through font-medium">₹{product.originalPrice}</span>
                         <span className="text-[13px] text-teal-600 font-bold">({product.discount}% OFF)</span>
                     </div>
 
-                    <div className="flex items-center -space-x-[6px]">
+                    <div className="flex items-center -space-x-6px">
                         {product.colors.map((color, idx) => (
                             <div
                                 key={idx}
-                                className="w-5 h-5 rounded-full border-[2px] border-white shadow-sm bg-cover"
+                                className="w-5 h-5 rounded-full border-2px border-white shadow-sm bg-cover"
                                 style={{ backgroundColor: color }}
                             ></div>
                         ))}
                         {product.extraColors && (
-                            <div className="w-5 h-5 rounded-full border-[2px] border-white bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-600 shadow-sm z-10">
+                            <div className="w-5 h-5 rounded-full border-2px border-white bg-gray-100 flex items-center justify-center text-[9px] font-bold text-gray-600 shadow-sm z-10">
                                 +{product.extraColors}
                             </div>
                         )}
