@@ -7,7 +7,7 @@ import { toast, ToastContainer } from 'react-toastify';
 // import 'react-toastify/dist/ReactToastify.css'; // Uncomment if not imported in App.jsx
 
 // Safe API URL with fallback
-const API_URL = (import.meta.env && import.meta.env.VITE_APP_BASE_URL) || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
 const Items = () => {
     // 1. Get Cart Data & Functions from Context
