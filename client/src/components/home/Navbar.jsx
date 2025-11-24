@@ -179,7 +179,7 @@ export default function Navbar() {
                                         <a
                                             href={link.href}
                                             // Removed hover:bg-blue-50, kept hover:text-blue-700
-                                            className="text-gray-700 hover:text-blue-700 font-semibold inline-flex items-center gap-1 transition py-4"
+                                            className="text-[#03214a] hover:bg-[#5ce1e6]/25 font-semibold inline-flex items-center gap-1 transition py-1 px-3 rounded-md"
                                         >
                                             {link.name}
                                             {/* {link.subLinks?.length > 0 && <IoChevronDown className="text-sm" />} */}

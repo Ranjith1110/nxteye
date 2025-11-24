@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'; // Added useLocation
 import {
     FaFacebook,
     FaWhatsapp,
@@ -11,7 +11,6 @@ import {
     IoPersonCircleSharp,
     IoMenuOutline,
     IoCloseOutline,
-    IoChevronDown,
     IoLocation,
     IoMail
 } from 'react-icons/io5';
@@ -63,6 +62,7 @@ const glassyMenuStyle = {
 
 export default function Navbar() {
     const { cartItems } = useCart();
+    const location = useLocation(); // Get current route info
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [openDropdownIndex, setOpenDropdownIndex] = useState(-1);
     const [openMobileAccordion, setOpenMobileAccordion] = useState(null);
@@ -71,6 +71,17 @@ export default function Navbar() {
     const lastScroll = useRef(0);
     const closeTimeoutRef = useRef(null);
     const navRef = useRef(null);
+
+    // Helper to determine if a link is active
+    const isActiveLink = (path) => {
+        if (path === '/') {
+            // Home is active only on exact match
+            return location.pathname === '/';
+        }
+        // Others are active if the current path starts with the link href
+        // e.g., '/eyeglasses' stays active on '/eyeglasses/men'
+        return location.pathname.startsWith(path);
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -187,6 +198,7 @@ export default function Navbar() {
                         <div className="hidden lg:flex items-center gap-6">
                             {navLinks.map((link, idx) => {
                                 const hasSubLinks = link.subLinks && link.subLinks.length > 0;
+                                const active = isActiveLink(link.href);
 
                                 return (
                                     <div
@@ -197,49 +209,15 @@ export default function Navbar() {
                                     >
                                         <Link
                                             to={link.href}
-                                            className="text-gray-700 hover:text-blue-700 font-semibold inline-flex items-center gap-1 transition py-4"
+                                            // Apply active conditional styling
+                                            className={`font-semibold inline-flex items-center gap-1 transition py-1 px-3 ${
+                                                active 
+                                                ? 'bg-[#5ce1e6]/25 rounded text-[#03214a]'
+                                                : 'text-[#03214a] hover:bg-[#5ce1e6]/25 hover:rounded'
+                                            }`}
                                         >
                                             {link.name}
-                                            {/* {hasSubLinks && <IoChevronDown className="text-sm" />} */}
                                         </Link>
-
-                                        {/* Dropdown - Only render if subLinks exist */}
-                                        {/* {hasSubLinks && (
-                                            <div
-                                                style={glassyMenuStyle}
-                                                className={`absolute top-[80%] right-0 w-[480px] md:w-[570px] border border-blue-100 rounded-2xl z-50 transition-all duration-200 origin-top-right ${openDropdownIndex === idx
-                                                    ? 'opacity-100 translate-y-0 pointer-events-auto'
-                                                    : 'opacity-0 translate-y-2 pointer-events-none'
-                                                    }`}
-                                            >
-                                                <div className="grid grid-cols-2 gap-4 p-6 text-left">
-                                                    <div>
-                                                        {link.subLinks.map((s) => (
-                                                            <Link
-                                                                key={s.name}
-                                                                to={s.href}
-                                                                className="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-blue-50 hover:text-blue-800 transition"
-                                                            >
-                                                                {s.name}
-                                                            </Link>
-                                                        ))}
-                                                    </div>
-                                                    <div className="flex flex-col justify-between items-start">
-                                                        <div className="w-full h-24 bg-gradient-to-tr from-blue-50 to-white rounded-xl flex items-center justify-center border border-blue-100 shadow-md">
-                                                            <span className="text-sm text-blue-600 font-semibold">Featured Collection</span>
-                                                        </div>
-                                                        <div className="mt-4 w-full">
-                                                            <Link
-                                                                to={link.href}
-                                                                className="inline-block w-full text-center py-2 rounded-2xl bg-blue-600 text-white text-base font-bold transition hover:bg-blue-700"
-                                                            >
-                                                                Shop {link.name}
-                                                            </Link>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )} */}
                                     </div>
                                 );
                             })}
@@ -294,43 +272,37 @@ export default function Navbar() {
                     </div>
                     <nav className="overflow-auto h-[calc(100%-80px)] p-4">
                         <ul className="space-y-4">
-                            {navLinks.map((link, idx) => (
-                                <li key={link.name} className="border-b pb-2">
-                                    <div className="flex items-center justify-between">
-                                        <Link
-                                            to={link.href}
-                                            className="text-lg font-medium text-gray-800"
-                                            onClick={() => setIsMobileMenuOpen(false)}
-                                        >
-                                            {link.name}
-                                        </Link>
-                                        {link.subLinks?.length ? (
-                                            <button
-                                                onClick={() =>
-                                                    setOpenMobileAccordion((prev) => (prev === idx ? null : idx))
-                                                }
-                                                className={`p-2 rounded-md text-gray-600 hover:text-blue-600 transition-transform ${openMobileAccordion === idx ? 'rotate-180' : ''}`}
+                            {navLinks.map((link, idx) => {
+                                const active = isActiveLink(link.href);
+                                return (
+                                    <li key={link.name} className="border-b pb-2">
+                                        <div className="flex items-center justify-between">
+                                            <Link
+                                                to={link.href}
+                                                // Apply active conditional styling for mobile
+                                                className={`text-lg font-medium ${
+                                                    active 
+                                                    ? 'text-blue-700' 
+                                                    : 'text-gray-800'
+                                                }`}
+                                                onClick={() => setIsMobileMenuOpen(false)}
                                             >
-                                                {/* <IoChevronDown /> */}
-                                            </button>
-                                        ) : null}
-                                    </div>
-                                    {/* {link.subLinks?.length && openMobileAccordion === idx ? (
-                                        <div className="mt-2 space-y-2 pl-3">
-                                            {link.subLinks.map((s) => (
-                                                <Link
-                                                    key={s.name}
-                                                    to={s.href}
-                                                    className="block text-gray-700 py-1"
-                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                {link.name}
+                                            </Link>
+                                            {link.subLinks?.length ? (
+                                                <button
+                                                    onClick={() =>
+                                                        setOpenMobileAccordion((prev) => (prev === idx ? null : idx))
+                                                    }
+                                                    className={`p-2 rounded-md text-gray-600 hover:text-blue-600 transition-transform ${openMobileAccordion === idx ? 'rotate-180' : ''}`}
                                                 >
-                                                    {s.name}
-                                                </Link>
-                                            ))}
+                                                    {/* <IoChevronDown /> */}
+                                                </button>
+                                            ) : null}
                                         </div>
-                                    ) : null} */}
-                                </li>
-                            ))}
+                                    </li>
+                                )
+                            })}
                         </ul>
                     </nav>
                 </aside>

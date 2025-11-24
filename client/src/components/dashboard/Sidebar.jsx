@@ -1,9 +1,9 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-    Home,
+     Home,
     FileText,
-    ShoppingBag,
+    ClipboardList,
     Clock,
     User,
     Settings,
@@ -11,7 +11,9 @@ import {
     HelpCircle,
     X,
     Users,
-    Banknote
+    PackageCheck,
+    Boxes,
+    PackagePlus
 } from "lucide-react";
 import logo from "/assets/dashboard/nxteye-logo.png";
 
@@ -26,12 +28,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     const menuItems = [
         { name: "Dashboard", icon: <Home size={18} />, path: "/dashboard" },
         // { name: "Prescription", icon: <FileText size={18} />, path: "/prescription" },
-        { name: "Items", icon: <FileText size={18} />, path: "/items" },
+        { name: "Items", icon: <Boxes size={18} />, path: "/items" },
         { name: "Purshase Bill", icon: <FileText size={18} />, path: "/purshase-bill" },
-        { name: "Order Summary", icon: <ShoppingBag size={18} />, path: "/order-summary" },
-        { name: "Ordered", icon: <Banknote size={18} />, path: "/ordered" },
+        { name: "Order Summary", icon: <ClipboardList size={18} />, path: "/order-summary" },
+        { name: "Ordered", icon: <PackageCheck size={18} />, path: "/ordered" },
         { name: "Delivered", icon: <Clock size={18} />, path: "/delivered" },
         { name: "CustomerList", icon: <Users size={18} />, path: "/customer-list" },
+        { name: "Add Products", icon: <PackagePlus size={18} />, path: "/add-products" },
     ];
 
     const bottomItems = [

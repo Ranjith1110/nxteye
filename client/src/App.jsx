@@ -9,10 +9,11 @@ import OrderSummary from "./admin/OrderSummary";
 import Ordered from "./admin/Ordered";
 import Delivered from "./admin/Delivered";
 import CustomerList from "./admin/CustomerList";
+import AddProducts from "./admin/AddProducts";
 import EyeGlasses from "./page/EyeGlasses";
 import SunGlasses from "./page/SunGlasses";
 import ContactLens from "./page/ContactLens";
-import Cart from "./page/Cart";
+import Cart from "./page/Cart"; 
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -90,6 +91,22 @@ const App = () => {
         element={
           <ProtectedRoute>
             <CustomerList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer-list"
+        element={
+          <ProtectedRoute>
+            <CustomerList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/add-products"
+        element={
+          <ProtectedRoute>
+            <AddProducts />
           </ProtectedRoute>
         }
       />
