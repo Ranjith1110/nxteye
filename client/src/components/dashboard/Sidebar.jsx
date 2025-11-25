@@ -1,7 +1,7 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 import {
-     Home,
+    Home,
     FileText,
     ClipboardList,
     Clock,
@@ -16,13 +16,20 @@ import {
     PackagePlus
 } from "lucide-react";
 import logo from "/assets/dashboard/nxteye-logo.png";
+import toast, { Toaster } from "react-hot-toast";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
     const navigate = useNavigate();
 
     const handleLogout = () => {
+        toast.success("Signed out successfully!");
+
+        // Clear auth state
         localStorage.removeItem("isAuthenticated");
-        navigate("/login");
+
+        setTimeout(() => {
+            navigate("/login");
+        }, 1000);
     };
 
     const menuItems = [
@@ -43,6 +50,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
     return (
         <>
+            <Toaster position="top-center" reverseOrder={false} />
+
             {/* Mobile overlay */}
             {isOpen && (
                 <div
@@ -59,7 +68,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 {/* Top Section */}
                 <div>
                     <div className="p-4 flex items-center justify-between">
-                        <img width={180} src={logo} alt="NxtEye Logo" />
+                        <Link to="/">
+                            <img width={180} src={logo} alt="NxtEye Logo" />
+                        </Link>
                         <button
                             className="lg:hidden text-[#03214a]"
                             onClick={toggleSidebar}
@@ -96,7 +107,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                             <button
                                 key={index}
                                 onClick={item.action}
-                                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition"
+                                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition w-full text-left"
                             >
                                 {item.icon}
                                 <span>{item.name}</span>

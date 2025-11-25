@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+// 1. Import React Hot Toast
+import toast, { Toaster } from "react-hot-toast";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -19,47 +19,24 @@ const Login = () => {
         if (email === adminCredentials.email && password === adminCredentials.password) {
             localStorage.setItem("isAuthenticated", true);
 
-            // ✅ Success toast (no icon)
-            toast("Login successful!", {
-                position: "bottom-right",
-                autoClose: 2000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                icon: false,
-                theme: "colored",
-                style: {
-                    backgroundColor: "#4CAF50",
-                    color: "#fff",
-                    fontWeight: "500",
-                    borderRadius: "10px",
-                },
-            });
+            // 2. Success Toast
+            toast.success("Login successful!");
 
             // Redirect after toast delay
             setTimeout(() => {
                 navigate("/dashboard");
             }, 2000);
         } else {
-            toast("Invalid credentials! Please try again.", {
-                position: "bottom-right",
-                autoClose: 2500,
-                icon: false,
-                theme: "colored",
-                style: {
-                    backgroundColor: "#E74C3C",
-                    color: "#fff",
-                    fontWeight: "500",
-                    borderRadius: "10px",
-                },
-            });
+            // 3. Error Toast
+            toast.error("Invalid credentials! Please try again.");
         }
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-[#03214a] px-4">
+        <div className="flex items-center justify-center min-h-screen bg-[#03214a] px-4 relative">
+            {/* 4. Add Toaster Component */}
+            <Toaster position="top-center" reverseOrder={false} />
+
             <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
                 <h1 className="text-3xl font-bold text-center text-[#03214a] mb-6">
                     Nxt<span className="text-[#5ce1e6]">Eye</span> Admin Login
@@ -80,7 +57,7 @@ const Login = () => {
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             className="w-full mt-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5ce1e6]"
-                            placeholder="admin@nxtEye.com"
+                            placeholder="Enter your email"
                         />
                     </div>
 
@@ -114,9 +91,6 @@ const Login = () => {
                     © {new Date().getFullYear()} NxtEye. All rights reserved.
                 </p>
             </div>
-
-            {/* Toast Container */}
-            <ToastContainer />
         </div>
     );
 };

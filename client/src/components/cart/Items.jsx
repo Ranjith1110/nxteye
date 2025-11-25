@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 // GO UP TWO LEVELS to find context: src/components/cart/ -> src/components/ -> src/
-import { useCart } from '../../context/CartContext'; 
-import { Trash2, ArrowLeft, X } from 'lucide-react'; 
+import { useCart } from '../../context/CartContext';
+import { Trash2, ArrowLeft, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css'; // Uncomment if not imported in App.jsx
+
+// 1. Import React Hot Toast
+import toast, { Toaster } from 'react-hot-toast';
 
 // Safe API URL with fallback
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
 const Items = () => {
-    // 1. Get Cart Data & Functions from Context
+    // Get Cart Data & Functions from Context
     const { cartItems, removeFromCart, clearCart } = useCart();
     const navigate = useNavigate();
-    
-    // 2. Local State for Modal & Form
+
+    // Local State for Modal & Form
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -37,6 +38,9 @@ const Items = () => {
         e.preventDefault();
         setLoading(true);
 
+        // 2. Start Loading Toast
+        const toastId = toast.loading("Processing your order...");
+
         const orderPayload = {
             customer: formData,
             items: cartItems,
@@ -54,20 +58,23 @@ const Items = () => {
 
             const data = await res.json();
 
+            // 3. Dismiss Loading Toast
+            toast.dismiss(toastId);
+
             if (res.ok) {
                 // SUCCESS: Order placed
                 toast.success("Order Placed Successfully!");
-                
+
                 // --- CRITICAL: CLEAR CART HERE ---
                 if (clearCart) {
-                    clearCart(); 
+                    clearCart();
                 } else {
                     console.error("clearCart function is missing from Context!");
                 }
-                
+
                 // Close Modal
                 setIsCheckoutOpen(false);
-                
+
                 // Redirect to Home after 2.5 seconds
                 setTimeout(() => {
                     navigate('/');
@@ -78,8 +85,9 @@ const Items = () => {
                 toast.error(data.message || "Failed to place order.");
             }
         } catch (error) {
+            toast.dismiss(toastId); // Dismiss loading on network error too
             console.error("Network Error:", error);
-            toast.error("Unable to connect to server. Check console.");
+            toast.error("Unable to connect to server.");
         } finally {
             setLoading(false);
         }
@@ -87,8 +95,9 @@ const Items = () => {
 
     return (
         <section className="py-12 px-4 md:px-8 mt-20 min-h-screen bg-gray-50 relative">
-            <ToastContainer position="top-center" autoClose={3000} />
-            
+            {/* 4. Add the Toaster Component */}
+            <Toaster position="top-center" reverseOrder={false} />
+
             <div className="max-w-5xl mx-auto">
                 <h2 className="text-3xl font-bold text-[#03214a] mb-8">Shopping Cart</h2>
 
@@ -106,11 +115,11 @@ const Items = () => {
                             {cartItems.map((item, index) => (
                                 <div key={`${item.id}-${index}`} className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm transition hover:shadow-md">
                                     <div className="w-24 h-24 shrink-0 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center p-2">
-                                        <img 
-                                            src={item.image} 
-                                            alt={item.brand} 
-                                            onError={(e) => e.target.src = "https://via.placeholder.com/150"} 
-                                            className="w-full h-full object-contain" 
+                                        <img
+                                            src={item.image}
+                                            alt={item.brand}
+                                            onError={(e) => e.target.src = "https://via.placeholder.com/150"}
+                                            className="w-full h-full object-contain"
                                         />
                                     </div>
 
@@ -147,7 +156,7 @@ const Items = () => {
                                     <span>Total</span>
                                     <span>₹{totalPrice}</span>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => setIsCheckoutOpen(true)}
                                     className="w-full bg-[#03214a] text-white py-3.5 rounded-lg font-bold hover:bg-blue-900 transition-colors shadow-lg active:scale-95"
                                 >
@@ -163,69 +172,69 @@ const Items = () => {
             {isCheckoutOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in relative">
-                        
+
                         {/* Header */}
                         <div className="bg-[#03214a] p-4 flex justify-between items-center text-white">
                             <h3 className="text-lg font-bold">Checkout Details</h3>
                             <button onClick={() => setIsCheckoutOpen(false)} className="hover:text-gray-300 transition">
-                                <X size={20}/>
+                                <X size={20} />
                             </button>
                         </div>
-                        
+
                         {/* Form */}
                         <form onSubmit={handlePlaceOrder} className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input 
-                                    type="text" 
-                                    name="name" 
-                                    required 
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition" 
-                                    value={formData.name} 
-                                    onChange={handleChange} 
-                                    placeholder="John Doe" 
+                                <input
+                                    type="text"
+                                    name="name"
+                                    required
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    placeholder="John Doe"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <input 
-                                    type="email" 
-                                    name="email" 
-                                    required 
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition" 
-                                    value={formData.email} 
-                                    onChange={handleChange} 
-                                    placeholder="john@example.com" 
+                                <input
+                                    type="email"
+                                    name="email"
+                                    required
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    placeholder="john@example.com"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                                <input 
-                                    type="tel" 
-                                    name="phone" 
-                                    required 
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition" 
-                                    value={formData.phone} 
-                                    onChange={handleChange} 
-                                    placeholder="9876543210" 
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    required
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    placeholder="9876543210"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Address</label>
-                                <textarea 
-                                    name="address" 
-                                    required 
-                                    rows="3" 
-                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition" 
-                                    value={formData.address} 
-                                    onChange={handleChange} 
+                                <textarea
+                                    name="address"
+                                    required
+                                    rows="3"
+                                    className="w-full border border-gray-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500 transition"
+                                    value={formData.address}
+                                    onChange={handleChange}
                                     placeholder="Street, City, Pincode"
                                 ></textarea>
                             </div>
 
                             <div className="pt-2">
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={loading}
                                     className="w-full bg-[#5ce1e6] text-[#03214a] font-bold py-3 rounded-lg hover:bg-[#4bcacad0] transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
                                 >
