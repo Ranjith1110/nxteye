@@ -391,7 +391,7 @@ const Ordered = () => {
                         <thead className="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
                             <tr>
                                 <th className="px-4 py-3 border-b">Bill No</th>
-                                <th className="px-4 py-3 border-b">Date</th>
+                                <th className="px-4 py-3 border-b">Delivery Date</th>
                                 <th className="px-4 py-3 border-b">Customer</th>
                                 <th className="px-4 py-3 border-b">Mobile</th>
                                 <th className="px-4 py-3 border-b">Status</th>

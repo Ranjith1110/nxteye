@@ -34,3 +34,20 @@ export const getAllPurchaseBills = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
+
+// --- Delete Purchase Bill ---
+export const deletePurchaseBill = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedBill = await PurchaseBill.findByIdAndDelete(id);
+
+    if (!deletedBill) {
+      return res.status(404).json({ message: "Bill not found" });
+    }
+
+    res.status(200).json({ message: "Purchase Bill deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting bill:", error);
+    res.status(500).json({ message: "Server Error", error: error.message });
+  }
+};

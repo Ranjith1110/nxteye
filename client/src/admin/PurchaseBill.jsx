@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/dashboard/Layout';
-import { Plus, Trash2, Save, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Save, RefreshCw, History } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
 const PurchaseBill = () => {
+  const navigate = useNavigate();
+
   // --- State: Vendor Info ---
   const [vendor, setVendor] = useState({
     vendorName: "",
@@ -22,11 +25,14 @@ const PurchaseBill = () => {
   // --- State: Current Item Input ---
   const [currentItem, setCurrentItem] = useState({
     itemName: "",
+    itemType: "",
     hsn: "",
-    rate: "",
-    disPercent: 0,
-    disRate: 0,
-    qty: 1,
+    itemPrice: "", // Basic Price
+    stock: "",     // Quantity
+    gstPercent: 0,
+    cgstPercent: 0,
+    sgstPercent: 0,
+    taxAmount: 0,
     netAmount: 0
   });
 
@@ -45,24 +51,32 @@ const PurchaseBill = () => {
     const { name, value } = e.target;
     let val = value;
 
-    if (['rate', 'disPercent', 'qty'].includes(name)) {
+    // Convert numbers
+    if (['itemPrice', 'stock', 'gstPercent', 'cgstPercent', 'sgstPercent'].includes(name)) {
       val = parseFloat(value) || 0;
     }
 
     setCurrentItem(prev => {
       const updated = { ...prev, [name]: val };
 
-      // Calculation Logic
-      const rate = parseFloat(updated.rate) || 0;
-      const disPer = parseFloat(updated.disPercent) || 0;
-      const qty = parseFloat(updated.qty) || 0;
+      // --- Auto-Calculate CGST & SGST if GST changes ---
+      if (name === 'gstPercent') {
+        updated.cgstPercent = val / 2;
+        updated.sgstPercent = val / 2;
+      }
 
-      const discountAmount = rate * (disPer / 100);
-      const net = (rate - discountAmount) * qty;
+      // --- Calculate Amounts ---
+      const price = parseFloat(updated.itemPrice) || 0;
+      const stock = parseFloat(updated.stock) || 0; // "Stock" here acts as Quantity
+      const gst = parseFloat(updated.gstPercent) || 0;
+
+      const baseTotal = price * stock;
+      const taxAmt = baseTotal * (gst / 100);
+      const net = baseTotal + taxAmt;
 
       return {
         ...updated,
-        disRate: discountAmount.toFixed(2),
+        taxAmount: taxAmt.toFixed(2),
         netAmount: net.toFixed(2)
       };
     });
@@ -70,18 +84,23 @@ const PurchaseBill = () => {
 
   // --- Add Item ---
   const handleAddItem = () => {
-    if (!currentItem.itemName || !currentItem.rate) {
-      toast.warn("Please enter Item Name and Rate");
+    if (!currentItem.itemName || !currentItem.itemPrice || !currentItem.stock) {
+      toast.warn("Please enter Item Name, Price, and Stock (Qty)");
       return;
     }
     setItems([...items, { ...currentItem, id: Date.now() }]);
+
+    // Reset Current Item
     setCurrentItem({
       itemName: "",
+      itemType: "",
       hsn: "",
-      rate: "",
-      disPercent: 0,
-      disRate: 0,
-      qty: 1,
+      itemPrice: "",
+      stock: "",
+      gstPercent: 0,
+      cgstPercent: 0,
+      sgstPercent: 0,
+      taxAmount: 0,
       netAmount: 0
     });
   };
@@ -144,11 +163,23 @@ const PurchaseBill = () => {
   return (
     <Layout>
       <div className="bg-white shadow-md rounded-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Purchase Bill Entry</h2>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Total Amount</p>
-            <h3 className="text-2xl font-bold text-blue-600">₹{grandTotal.toFixed(2)}</h3>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Purchase Bill Entry</h2>
+            <p className="text-sm text-gray-500">Add new stock inventory from vendors</p>
+          </div>
+
+          <div className="flex gap-4 items-center">
+            <button
+              onClick={() => navigate('/purchase-history')}
+              className="flex items-center gap-2 px-6 py-2 bg-[#5ce1e6] text-[#03214a] font-bold rounded-full hover:bg-[#03214a] hover:text-white transition shadow-md disabled:opacity-50"
+            >
+              <History size={18} /> History
+            </button>
+            <div className="text-right pl-4 border-l-2 border-gray-200">
+              <p className="text-xs text-gray-500 font-semibold uppercase">Total Amount</p>
+              <h3 className="text-2xl font-bold text-blue-600">₹{grandTotal.toFixed(2)}</h3>
+            </div>
           </div>
         </div>
 
@@ -204,55 +235,79 @@ const PurchaseBill = () => {
 
           {/* Input Row */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end bg-blue-50 p-3 rounded-md border border-blue-100">
-            <div className="md:col-span-3">
+
+            <div className="md:col-span-2">
               <label className="text-xs font-medium text-gray-600">Item Name</label>
               <input
                 type="text" name="itemName" value={currentItem.itemName} onChange={handleItemChange}
-                className="w-full p-2 border rounded text-sm" placeholder="Item Description"
+                className="w-full p-2 border rounded text-sm" placeholder="Name"
               />
             </div>
-            <div className="md:col-span-1">
-              <label className="text-xs font-medium text-gray-600">HSN/SAC</label>
+
+            <div className="md:col-span-2">
+              <label className="text-xs font-medium text-gray-600">Item Type</label>
               <input
-                type="text" name="hsn" value={currentItem.hsn} onChange={handleItemChange}
-                className="w-full p-2 border rounded text-sm"
+                type="text" name="itemType" value={currentItem.itemType} onChange={handleItemChange}
+                className="w-full p-2 border rounded text-sm" placeholder="Type"
               />
             </div>
+
             <div className="md:col-span-1">
-              <label className="text-xs font-medium text-gray-600">Rate</label>
+              <label className="text-xs font-medium text-gray-600">Price</label>
               <input
-                type="number" name="rate" value={currentItem.rate} onChange={handleItemChange}
+                type="number" name="itemPrice" value={currentItem.itemPrice} onChange={handleItemChange}
                 className="w-full p-2 border rounded text-sm" placeholder="0.00"
               />
             </div>
+
             <div className="md:col-span-1">
-              <label className="text-xs font-medium text-gray-600">Dis %</label>
+              <label className="text-xs font-medium text-gray-600">HSN</label>
               <input
-                type="number" name="disPercent" value={currentItem.disPercent} onChange={handleItemChange}
+                type="text" name="hsn" value={currentItem.hsn} onChange={handleItemChange}
+                className="w-full p-2 border rounded text-sm" placeholder="HSN"
+              />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="text-xs font-medium text-gray-600">GST %</label>
+              <input
+                type="number" name="gstPercent" value={currentItem.gstPercent} onChange={handleItemChange}
                 className="w-full p-2 border rounded text-sm" placeholder="0"
               />
             </div>
-            <div className="md:col-span-2">
-              <label className="text-xs font-medium text-gray-600">Dis Rate (Auto)</label>
+
+            <div className="md:col-span-1">
+              <label className="text-xs font-medium text-gray-600">CGST %</label>
               <input
-                type="number" name="disRate" value={currentItem.disRate} readOnly
+                type="number" name="cgstPercent" value={currentItem.cgstPercent} readOnly
                 className="w-full p-2 border rounded text-sm bg-gray-100 text-gray-500"
               />
             </div>
+
             <div className="md:col-span-1">
-              <label className="text-xs font-medium text-gray-600">Qty</label>
+              <label className="text-xs font-medium text-gray-600">SGST %</label>
               <input
-                type="number" name="qty" value={currentItem.qty} onChange={handleItemChange}
-                className="w-full p-2 border rounded text-sm"
+                type="number" name="sgstPercent" value={currentItem.sgstPercent} readOnly
+                className="w-full p-2 border rounded text-sm bg-gray-100 text-gray-500"
               />
             </div>
-            <div className="md:col-span-2">
-              <label className="text-xs font-medium text-gray-600">Net Amount</label>
+
+            <div className="md:col-span-1">
+              <label className="text-xs font-medium text-gray-600">Stock</label>
+              <input
+                type="number" name="stock" value={currentItem.stock} onChange={handleItemChange}
+                className="w-full p-2 border rounded text-sm" placeholder="Qty"
+              />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="text-xs font-medium text-gray-600">Amount</label>
               <input
                 type="number" name="netAmount" value={currentItem.netAmount} readOnly
                 className="w-full p-2 border rounded text-sm bg-gray-100 font-bold text-blue-600"
               />
             </div>
+
             <div className="md:col-span-1 flex justify-center">
               <button
                 onClick={handleAddItem}
@@ -269,32 +324,36 @@ const PurchaseBill = () => {
               <thead className="text-xs text-gray-700 uppercase bg-gray-100">
                 <tr>
                   <th className="px-4 py-3 border-b">SNo</th>
-                  <th className="px-4 py-3 border-b">Description</th>
-                  <th className="px-4 py-3 border-b">HSN/SAC</th>
-                  <th className="px-4 py-3 border-b text-right">Rate</th>
-                  <th className="px-4 py-3 border-b text-center">Dis %</th>
-                  <th className="px-4 py-3 border-b text-right">Dis Rate</th>
-                  <th className="px-4 py-3 border-b text-center">Qty</th>
-                  <th className="px-4 py-3 border-b text-right">Net Amount</th>
+                  <th className="px-4 py-3 border-b">Name</th>
+                  <th className="px-4 py-3 border-b">Type</th>
+                  <th className="px-4 py-3 border-b">HSN</th>
+                  <th className="px-4 py-3 border-b text-right">Price</th>
+                  <th className="px-4 py-3 border-b text-center">GST%</th>
+                  <th className="px-4 py-3 border-b text-center">CGST%</th>
+                  <th className="px-4 py-3 border-b text-center">SGST%</th>
+                  <th className="px-4 py-3 border-b text-center">Stock</th>
+                  <th className="px-4 py-3 border-b text-right">Total</th>
                   <th className="px-4 py-3 border-b text-center">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="px-4 py-6 text-center text-gray-500">No items added yet.</td>
+                    <td colSpan="11" className="px-4 py-6 text-center text-gray-500">No items added yet.</td>
                   </tr>
                 ) : (
                   items.map((item, index) => (
                     <tr key={item.id} className="bg-white border-b hover:bg-gray-50">
                       <td className="px-4 py-2 text-center">{index + 1}</td>
                       <td className="px-4 py-2 font-medium text-gray-900">{item.itemName}</td>
+                      <td className="px-4 py-2">{item.itemType || "-"}</td>
                       <td className="px-4 py-2">{item.hsn || "-"}</td>
-                      <td className="px-4 py-2 text-right">{item.rate}</td>
-                      <td className="px-4 py-2 text-center">{item.disPercent}%</td>
-                      <td className="px-4 py-2 text-right text-red-500">-{item.disRate}</td>
-                      <td className="px-4 py-2 text-center">{item.qty}</td>
-                      <td className="px-4 py-2 text-right font-bold">₹{item.netAmount}</td>
+                      <td className="px-4 py-2 text-right">{item.itemPrice}</td>
+                      <td className="px-4 py-2 text-center">{item.gstPercent}%</td>
+                      <td className="px-4 py-2 text-center text-gray-500">{item.cgstPercent}%</td>
+                      <td className="px-4 py-2 text-center text-gray-500">{item.sgstPercent}%</td>
+                      <td className="px-4 py-2 text-center">{item.stock}</td>
+                      <td className="px-4 py-2 text-right font-bold text-blue-600">₹{item.netAmount}</td>
                       <td className="px-4 py-2 text-center">
                         <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:text-red-700">
                           <Trash2 size={16} />
@@ -307,8 +366,8 @@ const PurchaseBill = () => {
               {items.length > 0 && (
                 <tfoot className="bg-gray-100 font-semibold text-gray-900">
                   <tr>
-                    <td colSpan="6" className="px-4 py-3 text-right">Total:</td>
-                    <td className="px-4 py-3 text-center">{items.reduce((acc, i) => acc + parseFloat(i.qty), 0)}</td>
+                    <td colSpan="8" className="px-4 py-3 text-right">Total Stock (Qty):</td>
+                    <td className="px-4 py-3 text-center">{items.reduce((acc, i) => acc + parseFloat(i.stock), 0)}</td>
                     <td className="px-4 py-3 text-right text-blue-700">₹{grandTotal.toFixed(2)}</td>
                     <td></td>
                   </tr>

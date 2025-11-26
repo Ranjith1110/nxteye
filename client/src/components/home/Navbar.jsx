@@ -141,10 +141,16 @@ export default function Navbar() {
                                 <span className='hidden md:block'>Ramanathapuram</span></a>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <a href="#" className="text-white text-lg"><FaFacebook /></a>
-                            <a href="#" className="text-white text-lg"><AiFillInstagram /></a>
-                            <a href="#" className="text-white text-lg"><FaWhatsapp /></a>
-                            <a href="#" className="text-white text-lg"><FaLinkedin /></a>
+                            <a href="https://www.facebook.com/share/17iLTNeCWz/?mibextid=wwXIfr" className="text-white text-lg"><FaFacebook /></a>
+                            <a href="https://www.instagram.com/nxt_eye?igsh=MTQ4a3F1aXd3OXB2bg%3D%3D&utm_source=qr" className="text-white text-lg"><AiFillInstagram /></a>
+                            <a
+                                href="https://wa.me/917869369994?text=Hello,%20I%20would%20like%20to%20get%20in%20touch!"
+                                className="text-white text-lg"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <FaWhatsapp />
+                            </a>
                         </div>
                     </div>
                 </div>

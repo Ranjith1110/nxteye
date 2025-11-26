@@ -167,10 +167,16 @@ export default function Navbar() {
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <a href="#" className="text-white text-lg"><FaFacebook /></a>
-                            <a href="#" className="text-white text-lg"><AiFillInstagram /></a>
-                            <a href="#" className="text-white text-lg"><FaWhatsapp /></a>
-                            <a href="#" className="text-white text-lg"><FaLinkedin /></a>
+                            <a href="https://www.facebook.com/share/17iLTNeCWz/?mibextid=wwXIfr" className="text-white text-lg"><FaFacebook /></a>
+                            <a href="https://www.instagram.com/nxt_eye?igsh=MTQ4a3F1aXd3OXB2bg%3D%3D&utm_source=qr" className="text-white text-lg"><AiFillInstagram /></a>
+                            <a
+                                href="https://wa.me/917869369994?text=Hello,%20I%20would%20like%20to%20get%20in%20touch!"
+                                className="text-white text-lg"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <FaWhatsapp />
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -210,11 +216,10 @@ export default function Navbar() {
                                         <Link
                                             to={link.href}
                                             // Apply active conditional styling
-                                            className={`font-semibold inline-flex items-center gap-1 transition py-1 px-3 ${
-                                                active 
-                                                ? 'bg-[#5ce1e6]/25 rounded text-[#03214a]'
-                                                : 'text-[#03214a] hover:bg-[#5ce1e6]/25 hover:rounded'
-                                            }`}
+                                            className={`font-semibold inline-flex items-center gap-1 transition py-1 px-3 ${active
+                                                    ? 'bg-[#5ce1e6]/25 rounded text-[#03214a]'
+                                                    : 'text-[#03214a] hover:bg-[#5ce1e6]/25 hover:rounded'
+                                                }`}
                                         >
                                             {link.name}
                                         </Link>
@@ -280,11 +285,10 @@ export default function Navbar() {
                                             <Link
                                                 to={link.href}
                                                 // Apply active conditional styling for mobile
-                                                className={`text-lg font-medium ${
-                                                    active 
-                                                    ? 'text-blue-700' 
-                                                    : 'text-gray-800'
-                                                }`}
+                                                className={`text-lg font-medium ${active
+                                                        ? 'text-blue-700'
+                                                        : 'text-gray-800'
+                                                    }`}
                                                 onClick={() => setIsMobileMenuOpen(false)}
                                             >
                                                 {link.name}

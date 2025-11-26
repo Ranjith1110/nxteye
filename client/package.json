@@ -15,7 +15,7 @@
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.24",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.3",
+    "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",

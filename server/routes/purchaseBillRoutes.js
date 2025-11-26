@@ -1,12 +1,10 @@
 import express from "express";
-import { createPurchaseBill, getAllPurchaseBills } from "../controllers/purchaseBillController.js";
+import { createPurchaseBill, getAllPurchaseBills, deletePurchaseBill } from "../controllers/purchaseBillController.js";
 
 const router = express.Router();
 
-// POST /api/purchase-bills/add
 router.post("/add", createPurchaseBill);
-
-// GET /api/purchase-bills/all
 router.get("/all", getAllPurchaseBills);
+router.delete("/delete/:id", deletePurchaseBill);
 
 export default router;

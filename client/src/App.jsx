@@ -4,7 +4,7 @@ import Login from "./page/Login";
 import Dashboard from "./admin/Dashboard";
 // import Prescription from "./admin/Prescription";
 import Items from "./admin/Items";
-import PurshaseBill from "./admin/PurshaseBill";
+import PurchaseBill from "./admin/PurchaseBill";
 import OrderSummary from "./admin/OrderSummary";
 import Ordered from "./admin/Ordered";
 import Delivered from "./admin/Delivered";
@@ -13,7 +13,10 @@ import AddProducts from "./admin/AddProducts";
 import EyeGlasses from "./page/EyeGlasses";
 import SunGlasses from "./page/SunGlasses";
 import ContactLens from "./page/ContactLens";
-import Cart from "./page/Cart"; 
+import Cart from "./page/Cart";
+import PurchaseHistory from "./admin/PurchaseHistory";
+import TermsConditions from "./page/TermsConditions";
+import PrivacyPolicy from "./page/PrivacyPolicy";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem("isAuthenticated");
@@ -28,6 +31,8 @@ const App = () => {
       <Route path="/sunglasses" element={<SunGlasses />} />
       <Route path="/contact-lenses" element={<ContactLens />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/terms-conditions" element={<TermsConditions />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
       <Route path="/login" element={<Login />} />
       {/* Protected Dashboard Route */}
       <Route
@@ -55,10 +60,18 @@ const App = () => {
         }
       />
       <Route
-        path="/purshase-bill"
+        path="/purchase-bill"
         element={
           <ProtectedRoute>
-            <PurshaseBill />
+            <PurchaseBill />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/purchase-history"
+        element={
+          <ProtectedRoute>
+            <PurchaseHistory />
           </ProtectedRoute>
         }
       />

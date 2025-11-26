@@ -12,17 +12,20 @@ const purchaseBillSchema = new mongoose.Schema(
     items: [
       {
         itemName: { type: String, required: true },
+        itemType: { type: String }, // New Field
         hsn: { type: String },
-        rate: { type: Number, required: true },
-        disPercent: { type: Number, default: 0 },
-        disRate: { type: Number, default: 0 },
-        qty: { type: Number, required: true },
-        netAmount: { type: Number, required: true },
+        itemPrice: { type: Number, required: true }, // Renamed from rate
+        stock: { type: Number, required: true }, // Renamed from qty (Quantity Purchased)
+        gstPercent: { type: Number, default: 0 }, // New Field
+        cgstPercent: { type: Number, default: 0 }, // New Field
+        sgstPercent: { type: Number, default: 0 }, // New Field
+        taxAmount: { type: Number, default: 0 }, // Calculated Tax
+        netAmount: { type: Number, required: true }, // (Price * Stock) + Tax
       },
     ],
     grandTotal: { type: Number, required: true },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt
+  { timestamps: true }
 );
 
 const PurchaseBill = mongoose.model("PurchaseBill", purchaseBillSchema);
