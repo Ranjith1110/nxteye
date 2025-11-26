@@ -550,8 +550,12 @@ const InvoiceTemplate = ({ bill }) => {
         <div className="invoice-box bg-white text-black font-sans text-sm">
             <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 mb-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-blue-900 uppercase tracking-wide">NxtEye Optical</h1>
-                    <p className="text-gray-700 font-medium mt-1">1/118, South Street, Ramnad - 621708</p>
+                    <img
+                        src="/assets/dashboard/nxteye-logo.png"
+                        alt="Company Logo"
+                        className="h-10 w-auto object-contain mb-2"
+                    />
+                    <p className="text-gray-700 font-medium mt-1">75/1, MRM Complex, Faizal Nagar Road, Kenikarai, Ramanathapuram - 623504</p>
                     <p className="text-gray-700">Phone: <span className="font-bold">9988997689</span></p>
                     <p className="text-gray-700">GSTIN: <span className="font-bold">33ABCDE1234F1Z5</span></p>
                 </div>

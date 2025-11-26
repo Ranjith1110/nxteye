@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
     Search,
-    Filter,
     ChevronUp,
     ChevronDown,
     Eye,
@@ -10,7 +9,6 @@ import {
     X,
     ArrowLeft,
     FileSpreadsheet,
-    Download,
     List,
     Trash2
 } from "lucide-react";
@@ -18,11 +16,7 @@ import { useNavigate } from "react-router-dom";
 import Layout from "../components/dashboard/Layout";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-// --- Libraries for Exporting ---
 import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
@@ -54,7 +48,50 @@ const convertAmountToWords = (amount) => {
     return words;
 };
 
-// --- A4 INVOICE TEMPLATE ---
+const safeAmount = (value) => {
+    const num = Number(value);
+    return isNaN(num) ? "0.00" : num.toFixed(2);
+};
+
+// --- HELPER: CALCULATE BILL TOTALS ---
+const getBillTotals = (items) => {
+    let taxable = 0;
+    let cgst = 0;
+    let sgst = 0;
+    let totalTax = 0;
+    let rates = new Set();
+
+    items.forEach(item => {
+        const price = parseFloat(item.itemPrice) || 0;
+        const stock = parseFloat(item.stock) || 0;
+        const itemTaxable = price * stock;
+
+        const cgstP = parseFloat(item.cgstPercent) || 0;
+        const sgstP = parseFloat(item.sgstPercent) || 0;
+        const gstRate = cgstP + sgstP;
+
+        if (gstRate > 0) rates.add(gstRate);
+
+        const itemCGST = itemTaxable * (cgstP / 100);
+        const itemSGST = itemTaxable * (sgstP / 100);
+
+        taxable += itemTaxable;
+        cgst += itemCGST;
+        sgst += itemSGST;
+        totalTax += (itemCGST + itemSGST);
+    });
+
+    let gstLabel = "0%";
+    if (rates.size === 1) {
+        gstLabel = `${Array.from(rates)[0]}%`;
+    } else if (rates.size > 1) {
+        gstLabel = "Mixed";
+    }
+
+    return { taxable, cgst, sgst, totalTax, gstLabel };
+};
+
+// --- SINGLE PURCHASE INVOICE TEMPLATE (For Modal Print) ---
 const PurchaseInvoiceTemplate = ({ bill }) => {
     if (!bill) return null;
 
@@ -101,7 +138,7 @@ const PurchaseInvoiceTemplate = ({ bill }) => {
                     <div>
                         <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Receiver (Billed To):</h3>
                         <p className="text-base font-bold text-blue-900">NxtEye Optical</p>
-                        <p className="text-gray-700">1/118, South Street, Ramnad - 621708</p>
+                        <p className="text-gray-700">75/1, MRM Complex, Faizal Nagar Road, Kenikarai, Ramanathapuram - 623504</p>
                     </div>
                     <div className="text-right">
                         <p className="text-gray-700">Phone: <b>9988997689</b></p>
@@ -198,9 +235,8 @@ const PurchaseInvoiceTemplate = ({ bill }) => {
 };
 
 // --- PREVIEW MODAL ---
-const BillPreviewModal = ({ bill, onClose }) => {
+const BillPreviewModal = ({ bill, onClose, onPrintSingle }) => {
     if (!bill) return null;
-    const handlePrint = () => window.print();
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -212,7 +248,7 @@ const BillPreviewModal = ({ bill, onClose }) => {
                     </div>
                     <div className="flex gap-3">
                         <button
-                            onClick={handlePrint}
+                            onClick={() => onPrintSingle(bill)}
                             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold shadow-md transition"
                         >
                             <Printer size={18} /> Print Bill
@@ -239,13 +275,17 @@ const PurchaseHistory = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Date Range State
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
 
     const [selectedBill, setSelectedBill] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [showAllItems, setShowAllItems] = useState(false);
+    
+    // Print State
+    const [printMode, setPrintMode] = useState(null); // 'report' or 'single'
+    const [billToPrint, setBillToPrint] = useState(null);
+
     const ROWS_TO_SHOW = 10;
 
     const fetchBills = async () => {
@@ -267,6 +307,17 @@ const PurchaseHistory = () => {
         fetchBills();
     }, []);
 
+    // Print Trigger Effect
+    useEffect(() => {
+        if (printMode) {
+            const timer = setTimeout(() => {
+                window.print();
+                // setPrintMode(null); // Optional: Reset after print
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [printMode, billToPrint]);
+
     const handleDeleteBill = async (id) => {
         if (!window.confirm("Are you sure you want to permanently delete this purchase bill?")) return;
         try {
@@ -283,45 +334,6 @@ const PurchaseHistory = () => {
         }
     };
 
-    // --- HELPER: CALCULATE BILL TOTALS + GST % LOGIC ---
-    const getBillTotals = (items) => {
-        let taxable = 0;
-        let cgst = 0;
-        let sgst = 0;
-        let totalTax = 0;
-        let rates = new Set();
-
-        items.forEach(item => {
-            const price = parseFloat(item.itemPrice) || 0;
-            const stock = parseFloat(item.stock) || 0;
-            const itemTaxable = price * stock;
-
-            const cgstP = parseFloat(item.cgstPercent) || 0;
-            const sgstP = parseFloat(item.sgstPercent) || 0;
-            const gstRate = cgstP + sgstP;
-
-            if (gstRate > 0) rates.add(gstRate);
-
-            const itemCGST = itemTaxable * (cgstP / 100);
-            const itemSGST = itemTaxable * (sgstP / 100);
-
-            taxable += itemTaxable;
-            cgst += itemCGST;
-            sgst += itemSGST;
-            totalTax += (itemCGST + itemSGST);
-        });
-
-        // Determine GST Display Label
-        let gstLabel = "0%";
-        if (rates.size === 1) {
-            gstLabel = `${Array.from(rates)[0]}%`;
-        } else if (rates.size > 1) {
-            gstLabel = "Mixed";
-        }
-
-        return { taxable, cgst, sgst, totalTax, gstLabel };
-    };
-
     // --- FILTER LOGIC ---
     const filteredBills = bills.filter((bill) => {
         const term = searchTerm.toLowerCase();
@@ -335,7 +347,7 @@ const PurchaseHistory = () => {
 
     const displayedBills = showAllItems ? filteredBills : filteredBills.slice(0, ROWS_TO_SHOW);
 
-    // --- SUMMARY TOTALS (MAIN FOOTER) ---
+    // --- SUMMARY TOTALS ---
     const summaryTotals = useMemo(() => {
         return filteredBills.reduce((acc, bill) => {
             const { taxable, cgst, sgst, totalTax } = getBillTotals(bill.items);
@@ -348,9 +360,16 @@ const PurchaseHistory = () => {
         }, { taxable: 0, cgst: 0, sgst: 0, totalTax: 0, grandTotal: 0 });
     }, [filteredBills]);
 
-    const handlePrintTable = () => window.print();
+    // --- HANDLERS ---
+    const handlePrintReport = () => {
+        setPrintMode('report');
+    };
 
-    // --- EXCEL EXPORT ---
+    const handlePrintSingle = (bill) => {
+        setBillToPrint(bill);
+        setPrintMode('single');
+    };
+
     const handleExportExcel = () => {
         if (filteredBills.length === 0) return toast.warn("No data to export");
         const dataToExport = filteredBills.map(bill => {
@@ -362,12 +381,24 @@ const PurchaseHistory = () => {
                 "Vendor GSTIN": bill.vendor?.gstin || "N/A",
                 "GST %": gstLabel,
                 "Taxable Value": taxable.toFixed(2),
-                "Total GST Amount": totalTax.toFixed(2),
                 "CGST Amount": cgst.toFixed(2),
                 "SGST Amount": sgst.toFixed(2),
+                "Total GST Amount": totalTax.toFixed(2),
                 "Grand Total": bill.grandTotal?.toFixed(2)
             };
         });
+
+        // Add Totals Row
+        dataToExport.push({
+            "Purchase Date": "TOTALS",
+            "Invoice Number": "", "Vendor Name": "", "Vendor GSTIN": "", "GST %": "",
+            "Taxable Value": summaryTotals.taxable.toFixed(2),
+            "CGST Amount": summaryTotals.cgst.toFixed(2),
+            "SGST Amount": summaryTotals.sgst.toFixed(2),
+            "Total GST Amount": summaryTotals.totalTax.toFixed(2),
+            "Grand Total": summaryTotals.grandTotal.toFixed(2)
+        });
+
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase_Register");
@@ -379,13 +410,30 @@ const PurchaseHistory = () => {
             <style>
                 {`
                     @media print {
-                        @page { size: landscape; margin: 10mm; }
+                        @page { size: auto; margin: 0; }
                         body * { visibility: hidden; }
-                        #main-purchase-table, #main-purchase-table * { visibility: visible; }
-                        #main-purchase-table { position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 10px; }
-                        .no-print-col { display: none !important; }
-                        #printable-invoice, #printable-invoice * { visibility: visible; }
-                        #printable-invoice { position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; background: white; z-index: 9999; }
+                        
+                        /* SHOW REPORT */
+                        #printable-report, #printable-report * { 
+                            visibility: ${printMode === 'report' ? 'visible' : 'hidden'}; 
+                        }
+
+                        /* SHOW SINGLE INVOICE */
+                        #printable-invoice, #printable-invoice * { 
+                            visibility: ${printMode === 'single' ? 'visible' : 'hidden'}; 
+                        }
+
+                        #printable-report {
+                            display: ${printMode === 'report' ? 'block' : 'none'} !important;
+                            position: absolute; left: 0; top: 0; width: 100%; padding: 10mm; z-index: 9999;
+                        }
+
+                        #printable-invoice {
+                            display: ${printMode === 'single' ? 'block' : 'none'} !important;
+                            position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; z-index: 9999;
+                        }
+
+                        nav, aside, .layout-content, .Toastify, .modal-backdrop { display: none !important; }
                     }
                 `}
             </style>
@@ -428,12 +476,7 @@ const PurchaseHistory = () => {
                 </div>
 
                 {/* TABLE */}
-                <div id="main-purchase-table" className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm grow">
-                    <div className="hidden print:block mb-4 text-center">
-                        <h1 className="text-xl font-bold">Purchase Register</h1>
-                        <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
-                    </div>
-
+                <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm grow">
                     <table className="min-w-full text-sm text-left text-gray-700">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
                             <tr>
@@ -442,9 +485,9 @@ const PurchaseHistory = () => {
                                 <th className="px-4 py-3 border-b text-left">Vendor Name</th>
                                 <th className="px-4 py-3 border-b text-center text-blue-700">GST %</th>
                                 <th className="px-4 py-3 border-b text-left">Taxable</th>
-                                <th className="px-4 py-3 border-b text-left font-bold text-gray-800">Total Tax</th>
                                 <th className="px-4 py-3 border-b text-left">CGST</th>
                                 <th className="px-4 py-3 border-b text-left">SGST</th>
+                                <th className="px-4 py-3 border-b text-left font-bold text-gray-800">Total Tax</th>
                                 <th className="px-4 py-3 border-b text-left">Grand Total</th>
                                 <th className="px-4 py-3 border-b text-center no-print-col">Action</th>
                             </tr>
@@ -464,9 +507,9 @@ const PurchaseHistory = () => {
                                             <td className="px-4 py-3 text-left">{bill.vendor?.vendorName}</td>
                                             <td className="px-4 py-3 text-center text-blue-600 font-bold bg-blue-50 rounded">{gstLabel}</td>
                                             <td className="px-4 py-3 text-left font-medium">₹{taxable.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-left font-bold text-gray-800">₹{totalTax.toFixed(2)}</td>
                                             <td className="px-4 py-3 text-left text-gray-600">₹{cgst.toFixed(2)}</td>
                                             <td className="px-4 py-3 text-left text-gray-600">₹{sgst.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-left font-bold text-gray-800">₹{totalTax.toFixed(2)}</td>
                                             <td className="px-4 py-3 text-left font-bold text-blue-600">₹{bill.grandTotal?.toFixed(2)}</td>
                                             <td className="px-4 py-3 text-center no-print-col">
                                                 <div className="flex justify-center gap-2">
@@ -487,12 +530,9 @@ const PurchaseHistory = () => {
                         {!loading && displayedBills.length > 0 && (
                             <tfoot className="bg-gray-100 font-bold border-t-2 border-gray-300">
                                 <tr>
-                                    <td colSpan="4" className="px-4 py-3 text-left text-gray-800 uppercase">Total (Filtered):</td>
-                                    <td className="px-4 py-3 text-right text-black">₹{summaryTotals.taxable.toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-right text-black">₹{summaryTotals.totalTax.toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-right text-black">₹{summaryTotals.cgst.toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-right text-black">₹{summaryTotals.sgst.toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-right text-blue-700 text-lg">₹{summaryTotals.grandTotal.toFixed(2)}</td>
+                                    <td colSpan="7" className="px-4 py-3 text-right text-gray-800 uppercase">Overall Totals:</td>
+                                    <td className="px-4 py-3 text-left text-black">₹{summaryTotals.totalTax.toFixed(2)}</td>
+                                    <td className="px-4 py-3 text-left text-blue-700 text-lg">₹{summaryTotals.grandTotal.toFixed(2)}</td>
                                     <td className="no-print-col"></td>
                                 </tr>
                             </tfoot>
@@ -514,8 +554,8 @@ const PurchaseHistory = () => {
 
                 {/* --- DOWNLOAD BUTTONS --- */}
                 <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col md:flex-row justify-end gap-4">
-                    <button onClick={handlePrintTable} className="flex items-center gap-2 px-6 py-2 bg-[#5ce1e6] text-[#03214a] font-bold rounded-full hover:bg-[#03214a] hover:text-white transition shadow-md disabled:opacity-50">
-                        <List size={20} /> Print Register
+                    <button onClick={handlePrintReport} className="flex items-center gap-2 px-6 py-2 bg-blue-100 text-blue-800 font-bold rounded-full hover:bg-blue-200 transition shadow-md disabled:opacity-50">
+                        <Printer size={20} /> Print Register
                     </button>
                     <button onClick={handleExportExcel} className="flex items-center gap-2 px-6 py-2 bg-[#5ce1e6] text-[#03214a] font-bold rounded-full hover:bg-[#03214a] hover:text-white transition shadow-md disabled:opacity-50">
                         <FileSpreadsheet size={20} /> Download GST Excel
@@ -523,14 +563,106 @@ const PurchaseHistory = () => {
                 </div>
             </div>
 
-            <div id="printable-invoice" style={{ display: 'none' }}>
-                <PurchaseInvoiceTemplate bill={selectedBill} />
+            {/* --- PRINTABLE SECTIONS --- */}
+            
+            {/* 1. Purchase Register Report */}
+            <div id="printable-report" style={{ display: 'none' }}>
+                <PurchaseHistoryReport 
+                    bills={filteredBills} 
+                    totals={summaryTotals} 
+                    dateRange={{ from: fromDate, to: toDate }}
+                    getBillTotals={getBillTotals}
+                />
             </div>
 
-            {showPreview && <BillPreviewModal bill={selectedBill} onClose={() => setShowPreview(false)} />}
+            {/* 2. Single Purchase Bill Invoice */}
+            <div id="printable-invoice" style={{ display: 'none' }}>
+                <PurchaseInvoiceTemplate bill={billToPrint} />
+            </div>
+
+            {showPreview && <BillPreviewModal bill={selectedBill} onClose={() => setShowPreview(false)} onPrintSingle={handlePrintSingle} />}
 
             <ToastContainer position="top-right" autoClose={2000} />
         </Layout>
+    );
+};
+
+// --- PRINTABLE REGISTER REPORT COMPONENT ---
+const PurchaseHistoryReport = ({ bills, totals, dateRange, getBillTotals }) => {
+    return (
+        <div className="w-full text-black font-sans text-xs">
+            <div className="flex justify-between items-end border-b-2 border-gray-800 pb-4 mb-6">
+                <div>
+                    <img
+                        src="/assets/dashboard/nxteye-logo.png"
+                        alt="Company Logo"
+                        className="h-12 w-auto object-contain mb-2"
+                    />
+                    <h1 className="text-xl font-bold uppercase text-gray-800">Purchase Tax Register</h1>
+                    <p className="text-gray-600">75/1, MRM Complex, Faizal Nagar Road, Kenikarai, Ramanathapuram - 623504</p>
+                    <p className="text-gray-600">GSTIN: <span className="font-bold">33ABCDE1234F1Z5</span></p>
+                </div>
+                <div className="text-right">
+                    <p className="text-gray-500 uppercase text-[10px] tracking-wider">Report Period</p>
+                    <div className="font-bold text-sm">
+                        {dateRange.from ? dateRange.from : "Start"} <span className="mx-1">to</span> {dateRange.to ? dateRange.to : "Present"}
+                    </div>
+                    <p className="mt-2 text-gray-500 uppercase text-[10px] tracking-wider">Generated On</p>
+                    <p className="font-bold">{new Date().toLocaleString('en-IN')}</p>
+                </div>
+            </div>
+
+            <table className="w-full border-collapse border border-gray-300">
+                <thead className="bg-gray-100 text-gray-700 uppercase">
+                    <tr>
+                        <th className="border border-gray-300 p-2 w-10 text-center">Sn</th>
+                        <th className="border border-gray-300 p-2 text-left">Date</th>
+                        <th className="border border-gray-300 p-2 text-left">Invoice No</th>
+                        <th className="border border-gray-300 p-2 text-left">Vendor</th>
+                        <th className="border border-gray-300 p-2 text-center">GST %</th>
+                        <th className="border border-gray-300 p-2 text-right">Taxable Val</th>
+                        <th className="border border-gray-300 p-2 text-right">CGST</th>
+                        <th className="border border-gray-300 p-2 text-right">SGST</th>
+                        <th className="border border-gray-300 p-2 text-right">Total Tax</th>
+                        <th className="border border-gray-300 p-2 text-right">Net Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {bills.length === 0 ? (
+                        <tr><td colSpan="10" className="border p-4 text-center">No records found for this period.</td></tr>
+                    ) : (
+                        bills.map((bill, idx) => {
+                             const { taxable, cgst, sgst, totalTax, gstLabel } = getBillTotals(bill.items);
+                             return (
+                                <tr key={idx} className="break-inside-avoid">
+                                    <td className="border border-gray-300 p-2 text-center">{idx + 1}</td>
+                                    <td className="border border-gray-300 p-2">{bill.vendor?.purchaseDate}</td>
+                                    <td className="border border-gray-300 p-2 font-medium">{bill.vendor?.invoiceNumber}</td>
+                                    <td className="border border-gray-300 p-2">{bill.vendor?.vendorName}</td>
+                                    <td className="border border-gray-300 p-2 text-center">{gstLabel}</td>
+                                    <td className="border border-gray-300 p-2 text-right">₹{taxable.toFixed(2)}</td>
+                                    <td className="border border-gray-300 p-2 text-right">₹{cgst.toFixed(2)}</td>
+                                    <td className="border border-gray-300 p-2 text-right">₹{sgst.toFixed(2)}</td>
+                                    <td className="border border-gray-300 p-2 text-right">₹{totalTax.toFixed(2)}</td>
+                                    <td className="border border-gray-300 p-2 text-right font-bold">₹{bill.grandTotal?.toFixed(2)}</td>
+                                </tr>
+                             )
+                        })
+                    )}
+                </tbody>
+                <tfoot className="bg-gray-100 font-bold border-t-2 border-gray-400">
+                    <tr>
+                        <td colSpan="8" className="border border-gray-300 p-2 text-right uppercase">Total:</td>
+                        <td className="border border-gray-300 p-2 text-right">₹{totals.totalTax.toFixed(2)}</td>
+                        <td className="border border-gray-300 p-2 text-right text-black">₹{totals.grandTotal.toFixed(2)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div className="mt-8 text-center text-[10px] text-gray-500">
+                <p>This is a computer generated purchase register.</p>
+            </div>
+        </div>
     );
 };
 
