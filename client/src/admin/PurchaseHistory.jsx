@@ -222,7 +222,7 @@ const BillPreviewModal = ({ bill, onClose }) => {
                         </button>
                     </div>
                 </div>
-                <div className="flex-grow overflow-y-auto bg-gray-100 p-8">
+                <div className="grow overflow-y-auto bg-gray-100 p-8">
                     <div className="mx-auto bg-white shadow-2xl max-w-[210mm] min-h-[297mm] overflow-hidden">
                         <PurchaseInvoiceTemplate bill={bill} />
                     </div>
@@ -428,7 +428,7 @@ const PurchaseHistory = () => {
                 </div>
 
                 {/* TABLE */}
-                <div id="main-purchase-table" className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm flex-grow">
+                <div id="main-purchase-table" className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm grow">
                     <div className="hidden print:block mb-4 text-center">
                         <h1 className="text-xl font-bold">Purchase Register</h1>
                         <p className="text-sm">Generated on: {new Date().toLocaleDateString()}</p>
@@ -441,11 +441,11 @@ const PurchaseHistory = () => {
                                 <th className="px-4 py-3 border-b text-left">Invoice No</th>
                                 <th className="px-4 py-3 border-b text-left">Vendor Name</th>
                                 <th className="px-4 py-3 border-b text-center text-blue-700">GST %</th>
-                                <th className="px-4 py-3 border-b text-left text-right">Taxable</th>
-                                <th className="px-4 py-3 border-b text-left text-right font-bold text-gray-800">Total Tax</th>
-                                <th className="px-4 py-3 border-b text-left text-right">CGST</th>
-                                <th className="px-4 py-3 border-b text-left text-right">SGST</th>
-                                <th className="px-4 py-3 border-b text-left text-right">Grand Total</th>
+                                <th className="px-4 py-3 border-b text-left">Taxable</th>
+                                <th className="px-4 py-3 border-b text-left font-bold text-gray-800">Total Tax</th>
+                                <th className="px-4 py-3 border-b text-left">CGST</th>
+                                <th className="px-4 py-3 border-b text-left">SGST</th>
+                                <th className="px-4 py-3 border-b text-left">Grand Total</th>
                                 <th className="px-4 py-3 border-b text-center no-print-col">Action</th>
                             </tr>
                         </thead>
@@ -463,11 +463,11 @@ const PurchaseHistory = () => {
                                             <td className="px-4 py-3 text-left font-medium text-gray-900">{bill.vendor?.invoiceNumber}</td>
                                             <td className="px-4 py-3 text-left">{bill.vendor?.vendorName}</td>
                                             <td className="px-4 py-3 text-center text-blue-600 font-bold bg-blue-50 rounded">{gstLabel}</td>
-                                            <td className="px-4 py-3 text-right font-medium">₹{taxable.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-right font-bold text-gray-800">₹{totalTax.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-right text-gray-600">₹{cgst.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-right text-gray-600">₹{sgst.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-right font-bold text-blue-600">₹{bill.grandTotal?.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-left font-medium">₹{taxable.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-left font-bold text-gray-800">₹{totalTax.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-left text-gray-600">₹{cgst.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-left text-gray-600">₹{sgst.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-left font-bold text-blue-600">₹{bill.grandTotal?.toFixed(2)}</td>
                                             <td className="px-4 py-3 text-center no-print-col">
                                                 <div className="flex justify-center gap-2">
                                                     <button onClick={() => { setSelectedBill(bill); setShowPreview(true); }} className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full hover:bg-blue-200 transition text-xs font-bold">

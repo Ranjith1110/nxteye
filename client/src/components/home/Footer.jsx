@@ -200,7 +200,7 @@ const Footer = () => {
                             href="https://vigilixhub.in/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-gradient-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent hover:underline transition"
+                            className="bg-linear-to-r from-cyan-400 to-teal-400 bg-clip-text text-transparent hover:underline transition"
                         >
                             VigiluxHub
                         </a>

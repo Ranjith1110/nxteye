@@ -226,7 +226,7 @@ const BillPreviewModal = ({ bill, onClose, onPrint, processing }) => {
                 </div>
 
                 {/* Scrollable Document Viewer Area */}
-                <div className="flex-grow overflow-y-auto bg-gray-100 p-8">
+                <div className="grow overflow-y-auto bg-gray-100 p-8">
                     {/* Simulated A4 Paper */}
                     <div className="mx-auto bg-white shadow-2xl max-w-[210mm] min-h-[297mm] overflow-hidden transform transition-transform">
                          <InvoiceTemplate bill={bill} />
