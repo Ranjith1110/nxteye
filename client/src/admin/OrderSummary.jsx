@@ -6,7 +6,6 @@ import "react-toastify/dist/ReactToastify.css";
 
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
-// --- HELPER: Value Generators ---
 const generateValues = (start, end, step, prefix = "") => {
     const vals = [];
     for (let i = start; i <= end; i += step) vals.push(`${prefix}${i.toFixed(2)}`);
@@ -18,13 +17,11 @@ const AXIS_Values = Array.from({ length: 37 }, (_, i) => i * 5);
 const PD_Values = Array.from({ length: 31 }, (_, i) => (25 + i * 0.5).toFixed(1));
 const VA_Values = ["6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "N6", "N8", "N10", "N12"];
 
-// --- HELPER: Number Formatting ---
 const safeAmount = (value) => {
     const num = Number(value);
     return isNaN(num) ? "0.00" : num.toFixed(2);
 };
 
-// --- HELPER: Number to Words ---
 const numberToWords = (num) => {
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -52,7 +49,6 @@ const convertAmountToWords = (amount) => {
 };
 
 const OrderSummary = () => {
-    // --- STATE MANAGEMENT ---
     const [invoiceNo, setInvoiceNo] = useState("");
     const [date, setDate] = useState("");
     const [items, setItems] = useState([]);
@@ -61,12 +57,10 @@ const OrderSummary = () => {
     const [filterType, setFilterType] = useState("itemName");
     const [showPreview, setShowPreview] = useState(false);
 
-    // Customer
     const [customer, setCustomer] = useState({
         customerName: "", mobileNumber: "", gender: "", dob: "", address: "", purposeOfVisit: ""
     });
 
-    // Clinical
     const [prescriptionMode, setPrescriptionMode] = useState("Glasses");
     const [appointment, setAppointment] = useState({
         checkupDate: new Date().toISOString().split('T')[0],
@@ -83,7 +77,6 @@ const OrderSummary = () => {
         right: { SPH: "0.00", CYL: "0.00", AXIS: "0", BC: "8.6", DIA: "14.0" },
     });
 
-    // Billing
     const [advance, setAdvance] = useState("");
     const [discount, setDiscount] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState("Cash");
@@ -115,7 +108,6 @@ const OrderSummary = () => {
         } catch { }
     };
 
-    // --- AUTO-FETCH CUSTOMER & HANDLE HISTORY ---
     const handleMobileBlur = async () => {
         if (customer.mobileNumber && customer.mobileNumber.length >= 10) {
             try {
@@ -136,14 +128,11 @@ const OrderSummary = () => {
                     toast.success("Existing Customer Found!");
 
                     if (lastClinicalEntry) {
-                        // CRITICAL LOGIC: 
-                        // We load the PREVIOUS readings to save typing time, 
-                        // BUT we ensure the 'checkupDate' is TODAY so it saves as a NEW entry.
                         setAppointment(prev => ({
                             ...prev,
                             customerType: "Returning",
                             ...lastClinicalEntry.appointmentDetails,
-                            checkupDate: new Date().toISOString().split('T')[0] // FORCE TODAY
+                            checkupDate: new Date().toISOString().split('T')[0]
                         }));
 
                         if (lastClinicalEntry.testType === "Glasses") {
@@ -160,7 +149,6 @@ const OrderSummary = () => {
         }
     };
 
-    // --- CALCULATIONS ---
     useEffect(() => {
         let sub = 0, c = 0, s = 0;
         cart.forEach(i => {
@@ -184,7 +172,6 @@ const OrderSummary = () => {
         });
     }, [cart, discount, advance]);
 
-    // --- DATA MAPPING FOR TEMPLATE ---
     const getBillData = () => ({
         invoiceNo,
         date: new Date().toLocaleString("en-IN"),
@@ -201,7 +188,6 @@ const OrderSummary = () => {
         orderStatus: orderStatus
     });
 
-    // --- HANDLERS ---
     const handleAddToCart = (item) => {
         if (cart.find(c => c._id === item._id)) return toast.info("Item already in cart");
         setCart([...cart, { ...item }]);
@@ -349,7 +335,6 @@ const OrderSummary = () => {
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* 1. CUSTOMER INFO */}
                     <div className="bg-gray-50 p-5 rounded-lg border border-gray-200">
                         <h3 className="text-xl font-bold text-blue-800 uppercase tracking-wider mb-4">Customer Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
@@ -364,7 +349,6 @@ const OrderSummary = () => {
                         </div>
                     </div>
 
-                    {/* 2. CLINICAL ENTRY */}
                     <div className="bg-blue-50 p-5 rounded-lg border border-blue-200 relative">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold text-blue-800 uppercase tracking-wider">Clinical Entry</h3>
@@ -423,11 +407,10 @@ const OrderSummary = () => {
                         </div>
                     </div>
 
-                    {/* 3. ITEM SELECTION */}
                     <div className="bg-white p-4 rounded-lg border shadow-sm">
                         <h3 className="text-xl font-bold text-blue-800 uppercase tracking-wider mb-2">Select Items</h3>
                         <div className="flex gap-3 mb-3">
-                            <input className="flex-grow p-2 border rounded text-sm" placeholder="Search items to add..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                            <input className="grow p-2 border rounded text-sm" placeholder="Search items to add..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                             <select className="border rounded px-3 text-sm" value={filterType} onChange={e => setFilterType(e.target.value)}><option value="itemName">Name</option><option value="itemNumber">Number</option></select>
                         </div>
 
@@ -449,7 +432,6 @@ const OrderSummary = () => {
                         </div>
                     </div>
 
-                    {/* 4. CART & BILLING */}
                     {cart.length > 0 && (
                         <div className="border rounded-lg overflow-hidden bg-white shadow-lg mt-4 animate-fade-in">
                             <div className="bg-gray-100 p-3 font-bold text-gray-700 text-sm border-b flex justify-between items-center">
@@ -524,7 +506,6 @@ const OrderSummary = () => {
                         </div>
                     )}
 
-                    {/* ACTIONS */}
                     <div className="flex justify-end gap-3 pt-4">
                         <button onClick={handleReset} className="px-4 py-2 bg-red-50 text-red-600 rounded-full text-sm font-medium hover:bg-red-100 transition flex items-center gap-2"><RefreshCw size={16} /> Full Reset</button>
                         <button onClick={() => setShowPreview(true)} disabled={cart.length === 0} className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center gap-2 ${cart.length === 0 ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}><Eye size={16} /> Preview</button>
@@ -534,12 +515,10 @@ const OrderSummary = () => {
                 </div>
                 <ToastContainer position="top-right" autoClose={2000} />
 
-                {/* --- HIDDEN INVOICE FOR PRINTING --- */}
                 <div id="printable-invoice" style={{ display: 'none' }}>
                     <InvoiceTemplate bill={getBillData()} />
                 </div>
 
-                {/* --- PREVIEW MODAL --- */}
                 {showPreview && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">

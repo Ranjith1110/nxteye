@@ -24,7 +24,6 @@ const Items = () => {
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("");
 
-    // Single Upload Fields
     const [singleUpload, setSingleUpload] = useState({
         itemNumber: "",
         itemName: "",
@@ -35,14 +34,11 @@ const Items = () => {
         stock: "",
     });
 
-    // Edit Modal
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
 
-    // Show More / Less
     const [showAllItems, setShowAllItems] = useState(false);
 
-    // Fetch Items
     const fetchItems = async () => {
         try {
             const res = await axios.get(API_URL);
@@ -57,7 +53,6 @@ const Items = () => {
         fetchItems();
     }, []);
 
-    // Filtered Items
     const filteredItems = items.filter((item) => {
         const matchSearch =
             item.itemName.toLowerCase().includes(search.toLowerCase()) ||
@@ -69,14 +64,12 @@ const Items = () => {
 
     const displayedItems = showAllItems ? filteredItems : filteredItems.slice(0, 5);
 
-    // Add Single Item
     const handleAddItem = async () => {
         if (!singleUpload.itemNumber || !singleUpload.itemName || !singleUpload.gst)
             return toast.warn("Please fill item number, name & GST");
 
         try {
             const res = await axios.post(API_URL, singleUpload);
-            // Add new item to top of list
             setItems([res.data, ...items]);
 
             setSingleUpload({
@@ -92,12 +85,10 @@ const Items = () => {
             toast.success("Item added successfully");
         } catch (error) {
             console.error(error);
-            // Display the specific error from backend (e.g. "Item Number already exists")
             toast.error(error.response?.data?.message || "Error adding item");
         }
     };
 
-    // Edit Item
     const openEditModal = (item) => {
         setEditItem({ ...item });
         setEditModalOpen(true);
@@ -122,7 +113,6 @@ const Items = () => {
         }
     };
 
-    // Delete Item
     const handleDelete = async (itemId) => {
         if (!window.confirm("Are you sure you want to delete this item?")) return;
 
@@ -136,7 +126,6 @@ const Items = () => {
         }
     };
 
-    // Download Sample File (Use Random Numbers to avoid collision)
     const handleDownloadSample = () => {
         const wb = XLSX.utils.book_new();
         const rand1 = Math.floor(Math.random() * 1000);
@@ -152,7 +141,6 @@ const Items = () => {
         XLSX.writeFile(wb, "SampleItems.xlsx");
     };
 
-    // Bulk Upload
     const handleBulkUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -166,7 +154,6 @@ const Items = () => {
                 const ws = wb.Sheets[wsname];
                 const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-                // Skip header row and filter empty rows
                 const uploadedItems = data
                     .slice(1)
                     .filter(row => row[0] && row[1])
@@ -186,10 +173,8 @@ const Items = () => {
 
                 const res = await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
 
-                // Refresh list
                 await fetchItems();
 
-                // Show specific message (success or partial success)
                 toast.success(res.data.message || "Bulk upload successful");
 
                 e.target.value = null;
@@ -208,7 +193,6 @@ const Items = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
                 <h2 className="text-2xl font-bold mb-6">Items Listing</h2>
 
-                {/* Search + Filter */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="relative w-full sm:max-w-xs">
                         <input
@@ -235,7 +219,6 @@ const Items = () => {
                     </div>
                 </div>
 
-                {/* Items Table */}
                 <div className="mt-4 overflow-x-auto rounded-t-lg border border-gray-200">
                     {filteredItems.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No items found.</div>
@@ -288,7 +271,6 @@ const Items = () => {
                     )}
                 </div>
 
-                {/* Show More / Less */}
                 {filteredItems.length > 5 && (
                     <div className="flex justify-center mt-4">
                         <button
@@ -309,7 +291,6 @@ const Items = () => {
                     </div>
                 )}
 
-                {/* Single Upload Section */}
                 <div className="mt-8">
                     <h4 className="font-semibold text-lg mb-3">Single Upload</h4>
                     <div className="flex flex-wrap gap-3 mb-3">
@@ -342,7 +323,6 @@ const Items = () => {
                     </button>
                 </div>
 
-                {/* Bulk Upload Section */}
                 <div className="mt-8 flex flex-wrap gap-5 items-center">
                     <button
                         onClick={handleDownloadSample}
@@ -365,7 +345,6 @@ const Items = () => {
                 </div>
             </div>
 
-            {/* Edit Modal */}
             {editModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
                     <div className="bg-white p-6 rounded-lg w-[90%] max-w-md relative shadow-lg">

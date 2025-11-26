@@ -8,22 +8,28 @@ import {
     Eye,
     Printer,
     CheckCircle,
-    X
+    X,
+    FileSpreadsheet,
+    FileText,
+    Download
 } from "lucide-react";
 import Layout from "../components/dashboard/Layout";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import { toPng } from "html-to-image";
+
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
-// --- HELPER: Number to Words ---
 const numberToWords = (num) => {
-    const a = ['','One ','Two ','Three ','Four ','Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
-    const b = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
     if ((num = num.toString()).length > 9) return 'Overflow';
     const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-    if (!n) return; 
+    if (!n) return;
     let str = '';
     str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
     str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
@@ -49,13 +55,11 @@ const safeAmount = (value) => {
     return isNaN(num) ? "0.00" : num.toFixed(2);
 };
 
-// --- A4 INVOICE TEMPLATE ---
 const InvoiceTemplate = ({ bill }) => {
     if (!bill) return null;
 
     return (
         <div className="invoice-box bg-white text-black font-sans text-sm p-8 h-full">
-            {/* HEADER */}
             <div className="flex justify-between items-start border-b-2 border-gray-800 pb-4 mb-4">
                 <div>
                     <h1 className="text-3xl font-extrabold text-blue-900 uppercase tracking-wide">NxtEye Optical</h1>
@@ -70,7 +74,6 @@ const InvoiceTemplate = ({ bill }) => {
                 </div>
             </div>
 
-            {/* CUSTOMER INFO */}
             <div className="mb-6 border border-gray-300 p-4 rounded">
                 <div className="flex justify-between">
                     <div className="w-1/2">
@@ -82,7 +85,6 @@ const InvoiceTemplate = ({ bill }) => {
                     <div className="w-1/2 text-right">
                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Payment Details:</h3>
                         <p className="text-gray-700">Mode: {bill.paymentMethod}</p>
-                        {/* Since we are printing this as 'Delivered', we show status as Delivered */}
                         <p className="mt-2 inline-block bg-green-100 text-green-800 px-3 py-1 rounded font-bold border border-green-300">
                             STATUS: DELIVERED
                         </p>
@@ -90,7 +92,6 @@ const InvoiceTemplate = ({ bill }) => {
                 </div>
             </div>
 
-            {/* ITEMS TABLE */}
             <div className="mb-2">
                 <table className="w-full border-collapse border border-gray-300 text-sm">
                     <thead className="bg-gray-100 text-gray-700">
@@ -107,8 +108,8 @@ const InvoiceTemplate = ({ bill }) => {
                     <tbody>
                         {bill.items.map((item, idx) => {
                             const price = Number(item.itemPrice);
-                            const cgstVal = price * (Number(item.cgst)/100);
-                            const sgstVal = price * (Number(item.sgst)/100);
+                            const cgstVal = price * (Number(item.cgst) / 100);
+                            const sgstVal = price * (Number(item.sgst) / 100);
                             const total = price + cgstVal + sgstVal;
                             return (
                                 <tr key={idx}>
@@ -126,7 +127,6 @@ const InvoiceTemplate = ({ bill }) => {
                 </table>
             </div>
 
-            {/* TOTALS SECTION */}
             <div className="flex justify-between items-start mt-4">
                 <div className="w-1/2 pr-8">
                     <div className="border-t border-b border-gray-300 py-2 my-2">
@@ -150,11 +150,11 @@ const InvoiceTemplate = ({ bill }) => {
                         <div className="flex justify-between text-gray-600"><span>Subtotal:</span> <span>₹{safeAmount(bill.subTotal)}</span></div>
                         <div className="flex justify-between text-gray-600"><span>CGST:</span> <span>₹{safeAmount(bill.totalCgstAmount)}</span></div>
                         <div className="flex justify-between text-gray-600"><span>SGST:</span> <span>₹{safeAmount(bill.totalSgstAmount)}</span></div>
-                        
+
                         {Number(bill.discountAmount) > 0 && (
                             <div className="flex justify-between text-red-600"><span>Discount:</span> <span>-₹{safeAmount(bill.discountAmount)}</span></div>
                         )}
-                        
+
                         <div className="flex justify-between font-bold text-lg border-t border-gray-400 pt-2 mt-2 text-black">
                             <span>Net Amount:</span> <span>₹{safeAmount(bill.grandTotal)}</span>
                         </div>
@@ -163,7 +163,6 @@ const InvoiceTemplate = ({ bill }) => {
                             <span>Advance Paid:</span> <span>-₹{safeAmount(bill.advance)}</span>
                         </div>
 
-                        {/* FINAL COLLECTION AMOUNT */}
                         <div className="bg-gray-100 p-2 rounded mt-2 border border-gray-300">
                             <div className="flex justify-between font-extrabold text-xl text-blue-900">
                                 <span>Balance To Pay:</span> <span>₹{safeAmount(bill.remaining)}</span>
@@ -173,7 +172,6 @@ const InvoiceTemplate = ({ bill }) => {
                 </div>
             </div>
 
-            {/* FOOTER / SIGNATURE */}
             <div className="mt-auto pt-12">
                 <div className="flex justify-between items-end">
                     <div className="text-center">
@@ -192,44 +190,37 @@ const InvoiceTemplate = ({ bill }) => {
     );
 };
 
-// --- PREVIEW MODAL (UPDATED TO SHOW FULL BILL) ---
 const BillPreviewModal = ({ bill, onClose, onPrint, processing }) => {
     if (!bill) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            {/* Modal Container */}
             <div className="bg-white rounded-xl w-full max-w-5xl h-[90vh] flex flex-col shadow-2xl animate-fade-in">
-                
-                {/* Toolbar */}
                 <div className="flex justify-between items-center p-4 border-b bg-white rounded-t-xl z-10">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800">Invoice Preview</h2>
                         <p className="text-xs text-gray-500">Review the final bill before delivery</p>
                     </div>
                     <div className="flex gap-3">
-                        <button 
-                            onClick={() => onPrint(bill)} 
+                        <button
+                            onClick={() => onPrint(bill)}
                             disabled={processing}
                             className={`flex items-center gap-2 text-white px-6 py-2 rounded-full font-bold shadow-md transition ${processing ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'}`}
                         >
                             {processing ? <span className="animate-spin">⌛</span> : <Printer size={18} />}
                             {processing ? "Processing..." : "Print & Deliver"}
                         </button>
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition"
                         >
                             <X size={24} />
                         </button>
                     </div>
                 </div>
-
-                {/* Scrollable Document Viewer Area */}
                 <div className="grow overflow-y-auto bg-gray-100 p-8">
-                    {/* Simulated A4 Paper */}
                     <div className="mx-auto bg-white shadow-2xl max-w-[210mm] min-h-[297mm] overflow-hidden transform transition-transform">
-                         <InvoiceTemplate bill={bill} />
+                        <InvoiceTemplate bill={bill} />
                     </div>
                 </div>
             </div>
@@ -237,17 +228,19 @@ const BillPreviewModal = ({ bill, onClose, onPrint, processing }) => {
     );
 };
 
-// --- MAIN PAGE ---
 const Ordered = () => {
     const [bills, setBills] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [searchDate, setSearchDate] = useState("");
+
+    const [fromDate, setFromDate] = useState("");
+    const [toDate, setToDate] = useState("");
+
     const [selectedBill, setSelectedBill] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
     const [showAllItems, setShowAllItems] = useState(false);
-    
-    // Print & Status Update Logic
+    const [isExporting, setIsExporting] = useState(false);
+
     const [printBillData, setPrintBillData] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -270,11 +263,9 @@ const Ordered = () => {
         fetchOrderedBills();
     }, []);
 
-    // --- THE CRITICAL FUNCTION ---
     const handlePrintAndDeliver = async (bill) => {
         setIsProcessing(true);
         try {
-            // 1. Update Status in Backend
             const res = await fetch(`${API_URL}/api/billing/status/${bill._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -283,18 +274,14 @@ const Ordered = () => {
 
             if (!res.ok) throw new Error("Failed to update status");
 
-            // 2. Prepare data for printing
             setPrintBillData(bill);
-
-            // 3. Show success message
             toast.success("Order Marked as Delivered! Printing Bill...");
 
-            // 4. Trigger Print (Wait for DOM update)
             setTimeout(() => {
                 window.print();
                 setIsProcessing(false);
-                setShowPreview(false); // Close modal
-                fetchOrderedBills(); // Refresh list (Item will disappear from Ordered)
+                setShowPreview(false);
+                fetchOrderedBills();
             }, 500);
 
         } catch (error) {
@@ -310,93 +297,171 @@ const Ordered = () => {
             bill.invoiceNo.toLowerCase().includes(searchLower) ||
             bill.customer.customerName.toLowerCase().includes(searchLower) ||
             bill.customer.mobileNumber.includes(searchTerm);
-        const matchesDate = searchDate ? bill.date.includes(searchDate) : true;
+
+        let matchesDate = true;
+        if (fromDate || toDate) {
+            const billDate = new Date(bill.createdAt || bill.date);
+
+            if (fromDate) {
+                matchesDate = matchesDate && (billDate >= new Date(fromDate));
+            }
+            if (toDate) {
+                const t = new Date(toDate);
+                t.setHours(23, 59, 59, 999);
+                matchesDate = matchesDate && (billDate <= t);
+            }
+        }
+
         return matchesSearch && matchesDate;
     });
 
     const displayedBills = showAllItems ? filteredBills : filteredBills.slice(0, ROWS_TO_SHOW);
 
+    const handleExportExcel = () => {
+        if (filteredBills.length === 0) return toast.warn("No data to export");
+
+        const dataToExport = filteredBills.map(bill => ({
+            "Invoice No": bill.invoiceNo,
+            "Date": bill.date.split(',')[0],
+            "Customer Name": bill.customer.customerName,
+            "Mobile": bill.customer.mobileNumber,
+            "Total Amount": safeAmount(bill.grandTotal),
+            "Balance Due": safeAmount(bill.remaining),
+            "Status": "Ordered"
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Active_Orders");
+        XLSX.writeFile(workbook, `Active_Orders_${new Date().toISOString().split('T')[0]}.xlsx`);
+        toast.success("Excel exported successfully!");
+    };
+
+    const handleExportPDF = async () => {
+        const element = document.getElementById("orders-table-container");
+        if (!element || filteredBills.length === 0) return toast.warn("No data or table to export");
+
+        setIsExporting(true);
+        try {
+            const dataUrl = await toPng(element, { cacheBust: true, backgroundColor: '#ffffff' });
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const imgProps = pdf.getImageProperties(dataUrl);
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            pdf.addImage(dataUrl, "PNG", 0, 10, pdfWidth, pdfHeight);
+            pdf.save(`Active_Orders_Report.pdf`);
+            toast.success("PDF exported successfully!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate PDF");
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const clearFilters = () => {
+        setSearchTerm("");
+        setFromDate("");
+        setToDate("");
+    };
+
     return (
         <Layout>
-            {/* --- A4 PRINT STYLES --- */}
             <style>
                 {`
                     @media print {
-                        @page {
-                            size: A4;
-                            margin: 0;
-                        }
-                        body * {
-                            visibility: hidden;
-                        }
-                        #printable-invoice, #printable-invoice * {
-                            visibility: visible;
-                        }
-                        #printable-invoice {
-                            display: flex !important;
-                            flex-direction: column;
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 210mm;
-                            height: 297mm; /* Exact A4 Height */
-                            padding: 15mm;
-                            background: white;
-                            z-index: 9999;
-                            font-size: 12px; /* Optimized for print reading */
-                        }
+                        @page { size: A4; margin: 0; }
+                        body * { visibility: hidden; }
+                        #printable-invoice, #printable-invoice * { visibility: visible; }
+                        #printable-invoice { display: flex !important; flexDirection: column; position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; padding: 15mm; background: white; z-index: 9999; font-size: 12px; }
                         .no-print { display: none !important; }
                     }
                 `}
             </style>
 
             <div className="bg-white shadow-md rounded-lg p-6 min-h-screen">
-                {/* Header & Search Sections */}
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-yellow-100 rounded-full text-yellow-600">
-                        <Package size={24} />
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-yellow-100 rounded-full text-yellow-600">
+                            <Package size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">Active Orders</h2>
+                            <p className="text-sm text-gray-500">Orders pending delivery & payment</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-800">Active Orders</h2>
-                        <p className="text-sm text-gray-500">Orders pending delivery & payment</p>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleExportExcel}
+                            className="flex items-center gap-2 px-6 py-2 bg-[#5ce1e6] text-[#03214a] font-bold rounded-full hover:bg-[#03214a] hover:text-white transition shadow-md disabled:opacity-50"
+                        >
+                            <FileSpreadsheet size={16} /> Excel
+                        </button>
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={isExporting}
+                            className="flex items-center gap-2 px-6 py-2 bg-[#5ce1e6] text-[#03214a] font-bold rounded-full hover:bg-[#03214a] hover:text-white transition shadow-md disabled:opacity-50"
+                        >
+                            <Download size={16} /> {isExporting ? "Generating..." : "PDF"}
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                <div className="flex flex-col sm:flex-row gap-3 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100 items-end">
                     <div className="relative w-full sm:max-w-xs">
+                        <label className="text-xs font-semibold text-gray-500 ml-1">Search</label>
                         <input
                             type="text"
-                            className="w-full border rounded-md pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
-                            placeholder="Search Bill No, Name..."
+                            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+                            placeholder="Bill No, Name, Mobile..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
                     </div>
-                    <div className="relative w-full sm:max-w-xs">
+                    <div className="relative w-full sm:max-w-[150px]">
+                        <label className="text-xs font-semibold text-gray-500 ml-1">From Date</label>
                         <input
-                            type="text"
-                            className="w-full border rounded-md pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
-                            placeholder="Filter by Date..."
-                            value={searchDate}
-                            onChange={(e) => setSearchDate(e.target.value)}
+                            type="date"
+                            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+                            value={fromDate}
+                            onChange={(e) => setFromDate(e.target.value)}
                         />
-                        <Filter className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+                    </div>
+                    <div className="relative w-full sm:max-w-[150px]">
+                        <label className="text-xs font-semibold text-gray-500 ml-1">To Date</label>
+                        <input
+                            type="date"
+                            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-400 outline-none"
+                            value={toDate}
+                            onChange={(e) => setToDate(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <button
+                            onClick={clearFilters}
+                            className="px-4 py-2 bg-gray-200 text-gray-600 rounded-md text-sm font-bold hover:bg-gray-300 transition"
+                        >
+                            Clear Filters
+                        </button>
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+                <div id="orders-table-container" className="mt-4 overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white p-2">
+                    <div className="mb-4 hidden" id="pdf-header">
+                        <h1 className="text-xl font-bold">Active Orders Report</h1>
+                        <p className="text-sm text-gray-500">Generated on: {new Date().toLocaleDateString()}</p>
+                    </div>
                     <table className="min-w-full text-sm text-left text-gray-700">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-100 font-bold">
                             <tr>
                                 <th className="px-4 py-3 border-b">Bill No</th>
-                                <th className="px-4 py-3 border-b">Delivery Date</th>
+                                <th className="px-4 py-3 border-b">Date</th>
                                 <th className="px-4 py-3 border-b">Customer</th>
                                 <th className="px-4 py-3 border-b">Mobile</th>
                                 <th className="px-4 py-3 border-b">Status</th>
                                 <th className="px-4 py-3 border-b">Balance Due</th>
-                                <th className="px-4 py-3 border-b text-center">Action</th>
+                                <th className="px-4 py-3 border-b text-center no-print-col" data-html2canvas-ignore="true">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -417,7 +482,7 @@ const Ordered = () => {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 font-bold text-red-600">₹{safeAmount(bill.remaining)}</td>
-                                        <td className="px-4 py-3 text-center flex justify-center gap-2">
+                                        <td className="px-4 py-3 text-center flex justify-center gap-2 no-print-col" data-html2canvas-ignore="true">
                                             <button
                                                 onClick={() => { setSelectedBill(bill); setShowPreview(true); }}
                                                 className="flex items-center gap-2 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full hover:bg-blue-100 transition text-xs font-bold"
@@ -433,7 +498,6 @@ const Ordered = () => {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {filteredBills.length > ROWS_TO_SHOW && (
                     <div className="flex justify-center mt-6">
                         <button
@@ -450,21 +514,19 @@ const Ordered = () => {
                 )}
             </div>
 
-            {/* --- HIDDEN PRINT CONTAINER (Strictly A4) --- */}
             <div id="printable-invoice" style={{ display: 'none' }}>
                 <InvoiceTemplate bill={printBillData} />
             </div>
 
-            {/* --- MODAL --- */}
             {showPreview && (
-                <BillPreviewModal 
-                    bill={selectedBill} 
-                    onClose={() => setShowPreview(false)} 
-                    onPrint={handlePrintAndDeliver} 
+                <BillPreviewModal
+                    bill={selectedBill}
+                    onClose={() => setShowPreview(false)}
+                    onPrint={handlePrintAndDeliver}
                     processing={isProcessing}
                 />
             )}
-            
+
             <ToastContainer position="top-right" autoClose={2000} />
         </Layout>
     );

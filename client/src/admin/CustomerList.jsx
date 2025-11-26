@@ -11,8 +11,6 @@ const CustomerList = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // --- State for Search, Filters, and Pagination ---
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -64,7 +62,6 @@ const CustomerList = () => {
             <div className="bg-white shadow-md rounded-lg p-6 relative">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer List & Clinical History</h2>
 
-                {/* --- Filter Bar --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
                     <div className="relative md:col-span-2">
                         <label className="block text-sm font-medium text-gray-600">Search Name/Mobile</label>
@@ -84,7 +81,6 @@ const CustomerList = () => {
                     <button onClick={handleReset} className="flex items-center gap-2 bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-medium hover:bg-gray-200 transition"><RefreshCw size={16} /> Reset</button>
                 </div>
 
-                {/* --- Data Table --- */}
                 {loading ? <div className="text-center py-10 text-gray-500 animate-pulse">Loading customer data...</div> : error ? <div className="text-center py-10 text-red-600">{error}</div> : customers.length === 0 ? <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg">No customers found matching filters.</div> : (
                     <>
                         <div className="mt-4 overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
@@ -133,7 +129,6 @@ const CustomerList = () => {
                 )}
             </div>
 
-            {/* --- CLINICAL READINGS MODAL (COMPARISON VIEW) --- */}
             {showModal && selectedCustomer && (
                 <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
@@ -148,14 +143,12 @@ const CustomerList = () => {
                         <div className="p-6 overflow-y-auto bg-gray-100 grow">
                             {selectedCustomer.clinicalHistory && selectedCustomer.clinicalHistory.length > 0 ? (
                                 <div className="space-y-8 relative">
-                                    {/* Vertical Line for Timeline */}
                                     <div className="absolute left-6 top-4 bottom-0 w-0.5 bg-gray-300 z-0"></div>
 
                                     {[...selectedCustomer.clinicalHistory].reverse().map((entry, idx) => {
                                         const isLatest = idx === 0;
                                         return (
                                             <div key={idx} className={`relative pl-14 transition-all ${isLatest ? 'scale-100' : 'scale-95 opacity-80 hover:opacity-100 hover:scale-100'}`}>
-                                                {/* Timeline Dot */}
                                                 <div className={`absolute left-4 top-5 w-4 h-4 rounded-full z-10 border-2 border-white ${isLatest ? 'bg-blue-600 shadow-blue-300 shadow-lg scale-125' : 'bg-gray-400'}`}></div>
 
                                                 <div className={`bg-white border rounded-xl shadow-sm overflow-hidden ${isLatest ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'}`}>

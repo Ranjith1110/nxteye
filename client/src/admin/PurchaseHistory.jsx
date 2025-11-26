@@ -423,7 +423,7 @@ const PurchaseHistory = () => {
                         <input type="date" className="w-full border rounded-md px-3 py-2 text-sm outline-none text-gray-600" value={toDate} onChange={(e) => setToDate(e.target.value)} />
                     </div>
                     <div className="ml-auto">
-                        <button onClick={() => { setSearchTerm(""); setFromDate(""); setToDate(""); }} className="flex items-center gap-2 px-6 py-2 bg-[#5ce1e6] text-[#03214a] font-bold rounded-full hover:bg-[#03214a] hover:text-white transition shadow-md disabled:opacity-50">Clear Filters</button>
+                        <button onClick={() => { setSearchTerm(""); setFromDate(""); setToDate(""); }} className="px-4 py-2 bg-gray-200 text-gray-600 rounded-md text-sm font-bold hover:bg-gray-300 transition">Clear Filters</button>
                     </div>
                 </div>
 

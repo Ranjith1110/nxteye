@@ -41,7 +41,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         { name: "Ordered", icon: <PackageCheck size={18} />, path: "/ordered" },
         { name: "Delivered", icon: <Clock size={18} />, path: "/delivered" },
         { name: "CustomerList", icon: <Users size={18} />, path: "/customer-list" },
-        { name: "Add Products", icon: <PackagePlus size={18} />, path: "/add-products" },
+        // { name: "Add Products", icon: <PackagePlus size={18} />, path: "/add-products" },
     ];
 
     const bottomItems = [
@@ -52,7 +52,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <>
             <Toaster position="top-center" reverseOrder={false} />
 
-            {/* Mobile overlay */}
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black/40 lg:hidden z-20"
@@ -60,12 +59,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 ></div>
             )}
 
-            {/* Sidebar */}
             <aside
                 className={`fixed top-0 left-0 z-30 h-screen bg-white shadow-xl flex flex-col justify-between w-64 transition-transform duration-300 
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
             >
-                {/* Top Section */}
                 <div>
                     <div className="p-4 flex items-center justify-between">
                         <Link to="/">
@@ -79,7 +76,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                         </button>
                     </div>
 
-                    {/* Menu Items */}
                     <nav className="flex flex-col p-4 space-y-1">
                         {menuItems.map((item, index) => (
                             <NavLink
@@ -100,7 +96,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                     </nav>
                 </div>
 
-                {/* Bottom Section */}
                 <div className="border-t p-4 flex flex-col space-y-1">
                     {bottomItems.map((item, index) =>
                         item.action ? (
