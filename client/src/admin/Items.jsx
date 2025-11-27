@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Search,
     Filter,
@@ -9,12 +9,14 @@ import {
     XCircle,
     ChevronDown,
     ChevronUp,
+    Printer, // Added Printer Icon
 } from "lucide-react";
 import Layout from "../components/dashboard/Layout";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Barcode from "react-barcode"; // Import Barcode
 
 const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/items`;
 
@@ -138,9 +140,7 @@ const Items = () => {
                 const res = await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
 
                 await fetchItems();
-
                 toast.success(res.data.message || "Bulk upload successful");
-
                 e.target.value = null;
 
             } catch (error) {
@@ -152,25 +152,67 @@ const Items = () => {
         reader.readAsBinaryString(file);
     };
 
+    // Function to trigger browser print
+    const handlePrint = () => {
+        window.print();
+    };
+
     return (
         <Layout>
-            <div className="bg-white shadow-md rounded-lg p-6">
+            <style>
+                {`
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+                    #printable-area, #printable-area * {
+                        visibility: visible;
+                    }
+                    #printable-area {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 20px;
+                        justify-content: flex-start;
+                        padding: 20px;
+                        background: white;
+                    }
+                    .print-card {
+                        border: 1px solid #ccc;
+                        padding: 10px;
+                        border-radius: 8px;
+                        page-break-inside: avoid;
+                        width: 200px; /* Adjust based on your sticker size */
+                        text-align: center;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                }
+                `}
+            </style>
+
+            {/* --- Main Dashboard Content (Hidden when printing) --- */}
+            <div className="bg-white shadow-md rounded-lg p-6 print:hidden">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Items Listing</h2>
                     
-                    {/* Bulk Actions moved to top right for better access since single upload is gone */}
                     <div className="flex gap-3">
                         <button
                             onClick={handleDownloadSample}
-                            className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2"
+                            className="px-4 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2"
                         >
                             <DownloadCloud size={18} />
-                            Sample File
+                            Sample
                         </button>
 
-                        <label className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2">
+                        <label className="px-4 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2 cursor-pointer">
                             <UploadCloud size={18} />
-                            Upload Bulk Data
+                            Bulk Upload
                             <input
                                 type="file"
                                 className="hidden"
@@ -178,9 +220,19 @@ const Items = () => {
                                 onChange={handleBulkUpload}
                             />
                         </label>
+
+                        {/* NEW PRINT BUTTON */}
+                        <button
+                            onClick={handlePrint}
+                            className="px-4 py-2 bg-gray-800 text-white rounded-full text-sm font-bold hover:bg-black transition shadow-md flex items-center gap-2"
+                        >
+                            <Printer size={18} />
+                            Print Barcodes
+                        </button>
                     </div>
                 </div>
 
+                {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="relative w-full sm:max-w-xs">
                         <input
@@ -207,6 +259,7 @@ const Items = () => {
                     </div>
                 </div>
 
+                {/* Table */}
                 <div className="mt-4 overflow-x-auto rounded-t-lg border border-gray-200">
                     {filteredItems.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No items found.</div>
@@ -218,10 +271,7 @@ const Items = () => {
                                     <th className="px-4 py-3 border-b text-left">Item Name</th>
                                     <th className="px-4 py-3 border-b text-left">Item Type</th>
                                     <th className="px-4 py-3 border-b text-left">Item Price</th>
-                                    <th className="px-4 py-3 border-b text-left">HSN</th>
                                     <th className="px-4 py-3 border-b text-center">GST%</th>
-                                    <th className="px-4 py-3 border-b text-center">CGST%</th>
-                                    <th className="px-4 py-3 border-b text-center">SGST%</th>
                                     <th className="px-4 py-3 border-b text-center">Stock</th>
                                     <th className="px-4 py-3 border-b text-center">Actions</th>
                                 </tr>
@@ -229,26 +279,17 @@ const Items = () => {
                             <tbody>
                                 {displayedItems.map((item) => (
                                     <tr className="bg-white border-b hover:bg-gray-50" key={item._id}>
-                                        <td className="px-4 py-3">{item.itemNumber}</td>
+                                        <td className="px-4 py-3 font-semibold">{item.itemNumber}</td>
                                         <td className="px-4 py-3">{item.itemName}</td>
                                         <td className="px-4 py-3">{item.itemType}</td>
                                         <td className="px-4 py-3">{item.itemPrice}/-</td>
-                                        <td className="px-4 py-3">{item.hsn || "-"}</td>
                                         <td className="px-4 py-3 text-center">{item.gst}%</td>
-                                        <td className="px-4 py-3 text-center">{item.cgst || item.gst / 2}%</td>
-                                        <td className="px-4 py-3 text-center">{item.sgst || item.gst / 2}%</td>
                                         <td className="px-4 py-3 text-center">{item.stock}</td>
                                         <td className="px-4 py-3 text-center flex justify-center gap-2">
-                                            <button
-                                                onClick={() => openEditModal(item)}
-                                                className="p-1 rounded hover:bg-gray-100"
-                                            >
+                                            <button onClick={() => openEditModal(item)} className="p-1 rounded hover:bg-gray-100">
                                                 <Edit2 size={16} />
                                             </button>
-                                            <button
-                                                onClick={() => handleDelete(item._id)}
-                                                className="p-1 rounded hover:bg-gray-100"
-                                            >
+                                            <button onClick={() => handleDelete(item._id)} className="p-1 rounded hover:bg-gray-100">
                                                 <Trash2 size={16} />
                                             </button>
                                         </td>
@@ -266,118 +307,74 @@ const Items = () => {
                             className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md transition"
                         >
                             {showAllItems ? (
-                                <>
-                                    Show Less <ChevronUp size={18} />
-                                </>
+                                <>Show Less <ChevronUp size={18} /></>
                             ) : (
-                                <>
-                                    Show More ({filteredItems.length - 5} more items){" "}
-                                    <ChevronDown size={18} />
-                                </>
+                                <>Show More ({filteredItems.length - 5} more items) <ChevronDown size={18} /></>
                             )}
                         </button>
                     </div>
                 )}
             </div>
 
+            {/* --- HIDDEN PRINTABLE AREA --- 
+                This is invisible normally. It only shows up when you click Print.
+                It loops through 'filteredItems' so you can print specific searches if you want.
+            */}
+            <div id="printable-area" className="hidden">
+                {filteredItems.map((item) => (
+                    <div key={item._id} className="print-card flex flex-col items-center justify-center p-2 border border-black mb-4 break-inside-avoid">
+                        <h4 className="text-xs font-bold uppercase mb-1 truncate w-full text-center">{item.itemName}</h4>
+                        <Barcode 
+                            value={item.itemNumber} 
+                            width={1.5} 
+                            height={40} 
+                            fontSize={12} 
+                            displayValue={true} 
+                        />
+                        <p className="text-sm font-bold mt-1">Rs. {item.itemPrice}/-</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Edit Modal */}
             {editModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 print:hidden">
                     <div className="bg-white p-6 rounded-lg w-[90%] max-w-md relative shadow-lg">
-                        <button
-                            onClick={() => setEditModalOpen(false)}
-                            className="absolute top-3 right-3 text-gray-500 hover:text-red-500"
-                        >
+                        <button onClick={() => setEditModalOpen(false)} className="absolute top-3 right-3 text-gray-500 hover:text-red-500">
                             <XCircle size={22} />
                         </button>
-
                         <h3 className="text-lg font-semibold mb-4">Edit Item</h3>
-
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Number</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="text"
-                                    value={editItem.itemNumber}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, itemNumber: e.target.value })
-                                    }
-                                />
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="text" value={editItem.itemNumber} onChange={(e) => setEditItem({ ...editItem, itemNumber: e.target.value })} />
                             </div>
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Name</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="text"
-                                    value={editItem.itemName}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, itemName: e.target.value })
-                                    }
-                                />
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="text" value={editItem.itemName} onChange={(e) => setEditItem({ ...editItem, itemName: e.target.value })} />
                             </div>
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Item Type</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="text"
-                                    value={editItem.itemType}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, itemType: e.target.value })
-                                    }
-                                />
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="text" value={editItem.itemType} onChange={(e) => setEditItem({ ...editItem, itemType: e.target.value })} />
                             </div>
                             <div>
-                                <label className="text-xs text-gray-600 font-medium">Item Price</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="number"
-                                    value={editItem.itemPrice}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, itemPrice: e.target.value })
-                                    }
-                                />
+                                <label className="text-xs text-gray-600 font-medium">Price</label>
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="number" value={editItem.itemPrice} onChange={(e) => setEditItem({ ...editItem, itemPrice: e.target.value })} />
                             </div>
                             <div>
-                                <label className="text-xs text-gray-600 font-medium">HSN Code</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="text"
-                                    value={editItem.hsn || ""}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, hsn: e.target.value })
-                                    }
-                                />
+                                <label className="text-xs text-gray-600 font-medium">HSN</label>
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="text" value={editItem.hsn || ""} onChange={(e) => setEditItem({ ...editItem, hsn: e.target.value })} />
                             </div>
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">GST %</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="number"
-                                    value={editItem.gst}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, gst: e.target.value })
-                                    }
-                                />
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="number" value={editItem.gst} onChange={(e) => setEditItem({ ...editItem, gst: e.target.value })} />
                             </div>
                             <div>
                                 <label className="text-xs text-gray-600 font-medium">Stock</label>
-                                <input
-                                    className="border rounded-md p-2 text-sm w-full mt-1"
-                                    type="number"
-                                    value={editItem.stock}
-                                    onChange={(e) =>
-                                        setEditItem({ ...editItem, stock: e.target.value })
-                                    }
-                                />
+                                <input className="border rounded-md p-2 text-sm w-full mt-1" type="number" value={editItem.stock} onChange={(e) => setEditItem({ ...editItem, stock: e.target.value })} />
                             </div>
                         </div>
-
-                        <button
-                            className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 w-full"
-                            onClick={handleSaveEdit}
-                        >
-                            Save Changes
-                        </button>
+                        <button className="mt-5 bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 w-full" onClick={handleSaveEdit}>Save Changes</button>
                     </div>
                 </div>
             )}
