@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Layout from "../components/dashboard/Layout";
 import { Plus, Trash2, RefreshCw, Save, Glasses, Eye, Printer, MessageCircle, X } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -8,7 +8,6 @@ const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
 // --- OPTICAL CONSTANTS & GENERATORS ---
 
-// helper to generate array of strings
 const generateRange = (start, end, step, prefix = "") => {
     const vals = [];
     for (let i = start; i <= end; i += step) {
@@ -18,25 +17,23 @@ const generateRange = (start, end, step, prefix = "") => {
 };
 
 // 1. GENERATE SPH/CYL: Negatives (Top) -> 0.00 -> Positives (Bottom)
-// We generate negatives in reverse order (e.g. -20 down to -0.25) so -20 is at the top of the list
 const negatives = [];
 for (let i = 20.00; i >= 0.25; i -= 0.25) {
     negatives.push(`-${i.toFixed(2)}`);
 }
 const positives = generateRange(0.25, 20.00, 0.25, "+");
-
 const SPH_CYL_Values = [...negatives, "0.00", ...positives];
 
 // 2. GENERATE ADD: Start from 0.00 up to +4.00
 const ADD_Values = ["0.00", ...generateRange(0.25, 4.0, 0.25, "+")];
 
 // 3. AXIS: 0 to 180
-const AXIS_Values = Array.from({ length: 37 }, (_, i) => i * 5);
+const AXIS_Values = Array.from({ length: 37 }, (_, i) => (i * 5).toString());
 
-// 4. PD: 40mm to 80mm (Standard Clinical Range)
+// 4. PD: 40mm to 80mm
 const PD_Values = Array.from({ length: 81 }, (_, i) => (40 + i * 0.5).toFixed(1));
 
-// 5. VA: Standard Acuity
+// 5. VA
 const VA_Values = ["6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "N6", "N8", "N10", "N12"];
 
 const safeAmount = (value) => {
@@ -70,14 +67,75 @@ const convertAmountToWords = (amount) => {
     return words;
 };
 
+// --- CUSTOM SEARCHABLE DROPDOWN COMPONENT ---
+const SearchableSelect = ({ value, options, onChange, placeholder = "Select" }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const wrapperRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                setIsOpen(false);
+                setSearchTerm(""); // Reset search on close
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const filteredOptions = options.filter(opt =>
+        String(opt).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleSelect = (opt) => {
+        onChange(opt);
+        setIsOpen(false);
+        setSearchTerm("");
+    };
+
+    return (
+        <div ref={wrapperRef} className="relative w-full">
+            <input
+                type="text"
+                className="w-full border p-1 text-xs rounded text-center bg-white focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer"
+                value={isOpen ? searchTerm : value}
+                placeholder={value || placeholder}
+                onFocus={() => { setIsOpen(true); setSearchTerm(""); }}
+                onChange={(e) => { setIsOpen(true); setSearchTerm(e.target.value); }}
+            />
+            {isOpen && (
+                <ul className="absolute z-50 w-full max-h-48 overflow-y-auto bg-white border border-gray-300 rounded shadow-lg mt-1 custom-scrollbar">
+                    {filteredOptions.length > 0 ? (
+                        filteredOptions.map((opt, idx) => (
+                            <li
+                                key={idx}
+                                className={`p-1.5 text-xs text-center cursor-pointer hover:bg-blue-100 transition-colors ${opt === value ? "bg-blue-50 font-bold text-blue-700" : "text-gray-700"}`}
+                                onClick={() => handleSelect(opt)}
+                            >
+                                {opt}
+                            </li>
+                        ))
+                    ) : (
+                        <li className="p-2 text-xs text-gray-400 text-center">No match</li>
+                    )}
+                </ul>
+            )}
+        </div>
+    );
+};
+
 const OrderSummary = () => {
     const [invoiceNo, setInvoiceNo] = useState("");
     const [date, setDate] = useState("");
     const [items, setItems] = useState([]);
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterType, setFilterType] = useState("itemName");
     const [showPreview, setShowPreview] = useState(false);
+
+    // REF FOR BARCODE SCANNER
+    const searchInputRef = useRef(null);
 
     const [customer, setCustomer] = useState({
         customerName: "", mobileNumber: "", gender: "", dob: "", address: "", purposeOfVisit: ""
@@ -110,6 +168,11 @@ const OrderSummary = () => {
         fetchItems();
         fetchInvoiceNumber();
         setDate(new Date().toLocaleString("en-IN"));
+
+        // AUTO FOCUS SEARCH BAR ON LOAD
+        if (searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
     }, []);
 
     const fetchItems = async () => {
@@ -164,7 +227,7 @@ const OrderSummary = () => {
                             setPrescriptionMode("ContactLens");
                             setClReadings(lastClinicalEntry.readings);
                         }
-                        toast.info("Previous readings loaded for reference. Please update for today's visit.");
+                        toast.info("Previous readings loaded for reference.");
                     }
                 }
             } catch (e) { }
@@ -213,9 +276,38 @@ const OrderSummary = () => {
     const handleAddToCart = (item) => {
         if (cart.find(c => c._id === item._id)) return toast.info("Item already in cart");
         setCart([...cart, { ...item }]);
+        // toast.success(`${item.itemName} Added`);
     };
+
     const handleRemove = (id) => setCart(cart.filter(c => c._id !== id));
-    const filteredItems = items.filter(i => (filterType === 'itemName' ? i.itemName : i.itemNumber).toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // --- BARCODE SCANNER LOGIC ---
+    const handleSearchKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const code = searchTerm.trim();
+            if (!code) return;
+
+            // Search by Item Number (Barcode) EXACT match
+            const foundItem = items.find(i =>
+                i.itemNumber && i.itemNumber.toString().toLowerCase() === code.toLowerCase()
+            );
+
+            if (foundItem) {
+                handleAddToCart(foundItem);
+                setSearchTerm(""); // Clear for next scan
+                toast.success("Scanned: " + foundItem.itemName);
+            } else {
+                toast.error("Item not found");
+            }
+        }
+    };
+
+    // Unified filter for display (Name OR Number)
+    const filteredItems = items.filter(i =>
+        (i.itemName && i.itemName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (i.itemNumber && i.itemNumber.toString().toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     const handlePrint = () => {
         if (cart.length === 0) return toast.warn("Cart is empty");
@@ -255,6 +347,8 @@ const OrderSummary = () => {
                 toast.success("Bill Saved Successfully!");
                 setCart([]); setAdvance(""); setDiscount(0);
                 fetchInvoiceNumber();
+                // Focus back on search for next bill
+                if (searchInputRef.current) searchInputRef.current.focus();
             } else {
                 toast.error("Failed to save bill");
             }
@@ -307,44 +401,31 @@ const OrderSummary = () => {
         setAdvance(""); setDiscount(0); setDeliveryDate("");
         setAppointment({ checkupDate: new Date().toISOString().split('T')[0], expiryDate: "", customerType: "New" });
         setOrderStatus({ ordered: true, delivered: false });
+        // Focus back on search
+        setTimeout(() => {
+            if (searchInputRef.current) searchInputRef.current.focus();
+        }, 100);
     };
-
-    const SelectBox = ({ val, opts, onChange }) => (
-        <select value={val} onChange={e => onChange(e.target.value)} className="w-full border p-1 text-xs rounded text-center bg-white">
-            {opts.map((o, i) => <option key={i} value={o}>{o}</option>)}
-        </select>
-    );
 
     return (
         <Layout>
             <style>
                 {`
                     @media print {
-                        @page {
-                            size: A4;
-                            margin: 0;
-                        }
-                        body * {
-                            visibility: hidden;
-                        }
-                        #printable-invoice, #printable-invoice * {
-                            visibility: visible;
-                        }
+                        @page { size: A4; margin: 0; }
+                        body * { visibility: hidden; }
+                        #printable-invoice, #printable-invoice * { visibility: visible; }
                         #printable-invoice {
-                            display: flex !important;
-                            flex-direction: column;
-                            position: absolute;
-                            left: 0;
-                            top: 0;
-                            width: 100%;
-                            height: 297mm; /* Exact A4 Height */
-                            padding: 20px;
-                            background: white;
-                            z-index: 9999;
-                            font-size: 12px;
+                            display: flex !important; flex-direction: column; position: absolute; left: 0; top: 0;
+                            width: 100%; height: 297mm; padding: 20px; background: white; z-index: 9999; font-size: 12px;
                         }
                         .no-print { display: none !important; }
                     }
+                    /* Custom Scrollbar for Dropdowns */
+                    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+                    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+                    .custom-scrollbar::-webkit-scrollbar-thumb { background: #888; border-radius: 3px; }
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #555; }
                 `}
             </style>
             <div className="bg-white shadow-md rounded-lg p-6 relative">
@@ -390,13 +471,13 @@ const OrderSummary = () => {
                                             <div key={eye} className={`bg-white p-3 rounded shadow-sm border-t-4 ${eye === 'right' ? 'border-blue-500' : 'border-blue-400'}`}>
                                                 <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase">{eye} EYE</h4>
                                                 <div className="grid grid-cols-7 gap-1">
-                                                    <div><label className="text-[10px] text-gray-400 block">SPH</label><SelectBox val={glassReadings[eye].SPH} opts={SPH_CYL_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], SPH: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">CYL</label><SelectBox val={glassReadings[eye].CYL} opts={SPH_CYL_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], CYL: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">AXIS</label><SelectBox val={glassReadings[eye].AXIS} opts={AXIS_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], AXIS: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">ADD</label><SelectBox val={glassReadings[eye].ADD} opts={ADD_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], ADD: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">PD</label><SelectBox val={glassReadings[eye].PD} opts={PD_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], PD: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">D-VA</label><SelectBox val={glassReadings[eye].DistanceVA} opts={VA_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], DistanceVA: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">N-VA</label><SelectBox val={glassReadings[eye].NearVA} opts={VA_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], NearVA: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">SPH</label><SearchableSelect value={glassReadings[eye].SPH} options={SPH_CYL_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], SPH: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">CYL</label><SearchableSelect value={glassReadings[eye].CYL} options={SPH_CYL_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], CYL: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">AXIS</label><SearchableSelect value={glassReadings[eye].AXIS} options={AXIS_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], AXIS: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">ADD</label><SearchableSelect value={glassReadings[eye].ADD} options={ADD_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], ADD: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">PD</label><SearchableSelect value={glassReadings[eye].PD} options={PD_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], PD: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">D-VA</label><SearchableSelect value={glassReadings[eye].DistanceVA} options={VA_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], DistanceVA: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">N-VA</label><SearchableSelect value={glassReadings[eye].NearVA} options={VA_Values} onChange={v => setGlassReadings(p => ({ ...p, [eye]: { ...p[eye], NearVA: v } }))} /></div>
                                                 </div>
                                             </div>
                                         ))}
@@ -407,9 +488,9 @@ const OrderSummary = () => {
                                             <div key={eye} className="bg-white p-3 rounded shadow-sm border-t-4 border-green-500">
                                                 <h4 className="text-xs font-bold text-gray-700 mb-2 uppercase">{eye} EYE</h4>
                                                 <div className="grid grid-cols-5 gap-2">
-                                                    <div><label className="text-[10px] text-gray-400 block">PWR</label><SelectBox val={clReadings[eye].SPH} opts={SPH_CYL_Values} onChange={v => setClReadings(p => ({ ...p, [eye]: { ...p[eye], SPH: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">CYL</label><SelectBox val={clReadings[eye].CYL} opts={SPH_CYL_Values} onChange={v => setClReadings(p => ({ ...p, [eye]: { ...p[eye], CYL: v } }))} /></div>
-                                                    <div><label className="text-[10px] text-gray-400 block">AXIS</label><SelectBox val={clReadings[eye].AXIS} opts={AXIS_Values} onChange={v => setClReadings(p => ({ ...p, [eye]: { ...p[eye], AXIS: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">PWR</label><SearchableSelect value={clReadings[eye].SPH} options={SPH_CYL_Values} onChange={v => setClReadings(p => ({ ...p, [eye]: { ...p[eye], SPH: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">CYL</label><SearchableSelect value={clReadings[eye].CYL} options={SPH_CYL_Values} onChange={v => setClReadings(p => ({ ...p, [eye]: { ...p[eye], CYL: v } }))} /></div>
+                                                    <div><label className="text-[10px] text-gray-400 block">AXIS</label><SearchableSelect value={clReadings[eye].AXIS} options={AXIS_Values} onChange={v => setClReadings(p => ({ ...p, [eye]: { ...p[eye], AXIS: v } }))} /></div>
                                                     <div><label className="text-[10px] text-gray-400 block">BC</label><input className="w-full border p-1 text-xs rounded text-center" value={clReadings[eye].BC} onChange={e => setClReadings(p => ({ ...p, [eye]: { ...p[eye], BC: e.target.value } }))} /></div>
                                                     <div><label className="text-[10px] text-gray-400 block">DIA</label><input className="w-full border p-1 text-xs rounded text-center" value={clReadings[eye].DIA} onChange={e => setClReadings(p => ({ ...p, [eye]: { ...p[eye], DIA: e.target.value } }))} /></div>
                                                 </div>
@@ -423,17 +504,24 @@ const OrderSummary = () => {
                             <button onClick={handleShareWhatsApp} className="bg-green-500 text-white px-5 py-2 rounded-full text-sm font-bold shadow hover:bg-green-600 transition flex items-center gap-2">
                                 <MessageCircle size={16} /> Share via WhatsApp
                             </button>
-                            <button onClick={handleSaveClinical} className="bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2">
+                            <button onClick={handleSaveClinical} className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2">
                                 <Save size={16} /> Save Clinical Entry
                             </button>
                         </div>
                     </div>
 
                     <div className="bg-white p-4 rounded-lg border shadow-sm">
-                        <h3 className="text-xl font-bold text-blue-800 uppercase tracking-wider mb-2">Select Items</h3>
+                        <h3 className="text-xl font-bold text-blue-800 uppercase tracking-wider mb-2">Select Items / Scan Barcode</h3>
                         <div className="flex gap-3 mb-3">
-                            <input className="grow p-2 border rounded text-sm" placeholder="Search items to add..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                            <select className="border rounded px-3 text-sm" value={filterType} onChange={e => setFilterType(e.target.value)}><option value="itemName">Name</option><option value="itemNumber">Number</option></select>
+                            <input
+                                ref={searchInputRef}
+                                className="grow p-2 border-2 border-blue-100 focus:border-blue-500 rounded text-sm outline-none transition-colors"
+                                placeholder="Scan Barcode here (or type name)..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                onKeyDown={handleSearchKeyDown}
+                                autoComplete="off"
+                            />
                         </div>
 
                         <div className="border rounded-lg max-h-48 overflow-y-auto bg-gray-50">

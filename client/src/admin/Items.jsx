@@ -6,7 +6,6 @@ import {
     Trash2,
     DownloadCloud,
     UploadCloud,
-    Upload,
     XCircle,
     ChevronDown,
     ChevronUp,
@@ -23,16 +22,6 @@ const Items = () => {
     const [items, setItems] = useState([]);
     const [search, setSearch] = useState("");
     const [filterType, setFilterType] = useState("");
-
-    const [singleUpload, setSingleUpload] = useState({
-        itemNumber: "",
-        itemName: "",
-        itemType: "",
-        itemPrice: "",
-        hsn: "",
-        gst: "",
-        stock: "",
-    });
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editItem, setEditItem] = useState(null);
@@ -63,31 +52,6 @@ const Items = () => {
     });
 
     const displayedItems = showAllItems ? filteredItems : filteredItems.slice(0, 5);
-
-    const handleAddItem = async () => {
-        if (!singleUpload.itemNumber || !singleUpload.itemName || !singleUpload.gst)
-            return toast.warn("Please fill item number, name & GST");
-
-        try {
-            const res = await axios.post(API_URL, singleUpload);
-            setItems([res.data, ...items]);
-
-            setSingleUpload({
-                itemNumber: "",
-                itemName: "",
-                itemType: "",
-                itemPrice: "",
-                hsn: "",
-                gst: "",
-                stock: "",
-            });
-
-            toast.success("Item added successfully");
-        } catch (error) {
-            console.error(error);
-            toast.error(error.response?.data?.message || "Error adding item");
-        }
-    };
 
     const openEditModal = (item) => {
         setEditItem({ ...item });
@@ -133,8 +97,8 @@ const Items = () => {
 
         const wsData = [
             ["Item Number", "Item Name", "Item Type", "Item Price", "HSN Code", "GST%", "Stock"],
-            [`nxteye-${rand1}`, "Example Frame", "Frame", 1500, "9003", 12, 20],
-            [`nxteye-${rand2}`, "Example Lens", "Lens", 800, "9001", 5, 10],
+            [`NXTEYE-${rand1}`, "Example Frame", "Frame", 1500, "9003", 12, 20],
+            [`NXTEYE-${rand2}`, "Example Lens", "Lens", 800, "9001", 5, 10],
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, "SampleItems");
@@ -191,7 +155,31 @@ const Items = () => {
     return (
         <Layout>
             <div className="bg-white shadow-md rounded-lg p-6">
-                <h2 className="text-2xl font-bold mb-6">Items Listing</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold">Items Listing</h2>
+                    
+                    {/* Bulk Actions moved to top right for better access since single upload is gone */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleDownloadSample}
+                            className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2"
+                        >
+                            <DownloadCloud size={18} />
+                            Sample File
+                        </button>
+
+                        <label className="px-6 py-2 bg-[#5ce1e6] text-[#03214a] rounded-full text-sm font-bold hover:bg-[#03214a] hover:text-white transition shadow-md flex items-center gap-2">
+                            <UploadCloud size={18} />
+                            Upload Bulk Data
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept=".xlsx, .xls, .csv"
+                                onChange={handleBulkUpload}
+                            />
+                        </label>
+                    </div>
+                </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="relative w-full sm:max-w-xs">
@@ -290,59 +278,6 @@ const Items = () => {
                         </button>
                     </div>
                 )}
-
-                <div className="mt-8">
-                    <h4 className="font-semibold text-lg mb-3">Single Upload</h4>
-                    <div className="flex flex-wrap gap-3 mb-3">
-                        {[
-                            { key: "itemNumber", placeholder: "Item Number" },
-                            { key: "itemName", placeholder: "Item Name" },
-                            { key: "itemType", placeholder: "Item Type" },
-                            { key: "itemPrice", placeholder: "Item Price", type: "number" },
-                            { key: "hsn", placeholder: "HSN Code" },
-                            { key: "gst", placeholder: "GST %", type: "number" },
-                            { key: "stock", placeholder: "Stock", type: "number" },
-                        ].map(({ key, placeholder, type }) => (
-                            <input
-                                key={key}
-                                className="border rounded-md p-2 text-sm w-36"
-                                placeholder={placeholder}
-                                type={type || "text"}
-                                value={singleUpload[key]}
-                                onChange={(e) =>
-                                    setSingleUpload({ ...singleUpload, [key]: e.target.value })
-                                }
-                            />
-                        ))}
-                    </div>
-                    <button
-                        className="inline-flex items-center bg-[#5ce1e6] text-[#03214a] px-4 py-2 rounded-md hover:bg-[#03214a] hover:text-white transition"
-                        onClick={handleAddItem}
-                    >
-                        <Upload className="mr-2" size={16} /> Upload the Data
-                    </button>
-                </div>
-
-                <div className="mt-8 flex flex-wrap gap-5 items-center">
-                    <button
-                        onClick={handleDownloadSample}
-                        className="flex flex-col items-center p-4 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
-                    >
-                        <DownloadCloud size={28} />
-                        <span className="text-sm mt-1">Download Sample File</span>
-                    </button>
-
-                    <label className="flex flex-col items-center p-4 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 cursor-pointer">
-                        <UploadCloud size={28} />
-                        <span className="text-sm mt-1">Upload File</span>
-                        <input
-                            type="file"
-                            className="hidden"
-                            accept=".xlsx, .xls"
-                            onChange={handleBulkUpload}
-                        />
-                    </label>
-                </div>
             </div>
 
             {editModalOpen && (
