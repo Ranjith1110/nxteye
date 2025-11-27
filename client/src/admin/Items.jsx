@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Search,
     Filter,
@@ -9,14 +9,14 @@ import {
     XCircle,
     ChevronDown,
     ChevronUp,
-    Printer, // Added Printer Icon
+    Printer,
 } from "lucide-react";
 import Layout from "../components/dashboard/Layout";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Barcode from "react-barcode"; // Import Barcode
+import Barcode from "react-barcode";
 
 const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/items`;
 
@@ -138,7 +138,6 @@ const Items = () => {
                 }
 
                 const res = await axios.post(`${API_URL}/bulk`, { items: uploadedItems });
-
                 await fetchItems();
                 toast.success(res.data.message || "Bulk upload successful");
                 e.target.value = null;
@@ -148,55 +147,58 @@ const Items = () => {
                 toast.error(error.response?.data?.message || "Bulk upload failed");
             }
         };
-
         reader.readAsBinaryString(file);
     };
 
-    // Function to trigger browser print
     const handlePrint = () => {
         window.print();
     };
 
     return (
         <Layout>
+            {/* ---------------- PRINT CSS STYLES ---------------- */}
             <style>
                 {`
                 @media print {
+                    /* Hide everything except printable area */
                     body * {
                         visibility: hidden;
                     }
                     #printable-area, #printable-area * {
                         visibility: visible;
                     }
+
+                    /* Grid Layout for Stickers */
                     #printable-area {
                         position: absolute;
                         left: 0;
                         top: 0;
                         width: 100%;
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 20px;
-                        justify-content: flex-start;
-                        padding: 20px;
+                        display: grid;
+                        grid-template-columns: repeat(3, 1fr); /* 3 Columns */
+                        gap: 15px; /* Reduced gap to fit more */
+                        padding: 10px;
                         background: white;
                     }
+
+                    /* Sticker Shape & Size */
                     .print-card {
-                        border: 1px solid #ccc;
-                        padding: 10px;
-                        border-radius: 8px;
-                        page-break-inside: avoid;
-                        width: 200px; /* Adjust based on your sticker size */
-                        text-align: center;
+                        border: 1px solid #000;
+                        border-radius: 6px;
+                        padding: 4px; /* Tighter internal padding */
+                        height: 120px; /* Reduced height for rectangular shape */
                         display: flex;
                         flex-direction: column;
                         align-items: center;
                         justify-content: center;
+                        page-break-inside: avoid;
+                        text-align: center;
                     }
                 }
                 `}
             </style>
 
-            {/* --- Main Dashboard Content (Hidden when printing) --- */}
+            {/* ---------------- DASHBOARD UI (Hidden on Print) ---------------- */}
             <div className="bg-white shadow-md rounded-lg p-6 print:hidden">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Items Listing</h2>
@@ -221,7 +223,6 @@ const Items = () => {
                             />
                         </label>
 
-                        {/* NEW PRINT BUTTON */}
                         <button
                             onClick={handlePrint}
                             className="px-4 py-2 bg-gray-800 text-white rounded-full text-sm font-bold hover:bg-black transition shadow-md flex items-center gap-2"
@@ -232,7 +233,6 @@ const Items = () => {
                     </div>
                 </div>
 
-                {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="relative w-full sm:max-w-xs">
                         <input
@@ -259,7 +259,6 @@ const Items = () => {
                     </div>
                 </div>
 
-                {/* Table */}
                 <div className="mt-4 overflow-x-auto rounded-t-lg border border-gray-200">
                     {filteredItems.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No items found.</div>
@@ -316,27 +315,39 @@ const Items = () => {
                 )}
             </div>
 
-            {/* --- HIDDEN PRINTABLE AREA --- 
-                This is invisible normally. It only shows up when you click Print.
-                It loops through 'filteredItems' so you can print specific searches if you want.
-            */}
+            {/* ---------------- PRINTABLE STICKERS ---------------- */}
             <div id="printable-area" className="hidden">
                 {filteredItems.map((item) => (
-                    <div key={item._id} className="print-card flex flex-col items-center justify-center p-2 border border-black mb-4 break-inside-avoid">
-                        <h4 className="text-xs font-bold uppercase mb-1 truncate w-full text-center">{item.itemName}</h4>
-                        <Barcode 
-                            value={item.itemNumber} 
-                            width={1.5} 
-                            height={40} 
-                            fontSize={12} 
-                            displayValue={true} 
-                        />
-                        <p className="text-sm font-bold mt-1">Rs. {item.itemPrice}/-</p>
+                    <div key={item._id} className="print-card">
+                        {/* Company Name (Small) */}
+                        <p className="text-[9px] font-bold text-gray-600 uppercase tracking-wider mb-0.5">
+                            NXT EYEWEAR
+                        </p>
+
+                        {/* Barcode (Adjusted Size) */}
+                        <div className="w-full flex justify-center overflow-hidden">
+                            <Barcode 
+                                value={item.itemNumber} 
+                                width={1.6}    /* Slightly thinner bars to fit width */
+                                height={35}    /* Shorter bars to fit rectangle */
+                                fontSize={12}  /* Smaller number font */
+                                margin={2}     /* Reduce margin inside SVG */
+                                displayValue={true} 
+                            />
+                        </div>
+
+                        {/* Item Details (Tighter spacing) */}
+                        <h4 className="text-xs font-bold uppercase truncate w-full px-1">
+                            {item.itemName}
+                        </h4>
+                        <div className="text-center w-full px-4 mt-0.5">
+                            <p className="text-sm font-bold">Rs.{item.itemPrice}</p>
+                        </div>
                     </div>
                 ))}
             </div>
 
-            {/* Edit Modal */}
+            {/* ---------------- EDIT MODAL ---------------- */}
             {editModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 print:hidden">
                     <div className="bg-white p-6 rounded-lg w-[90%] max-w-md relative shadow-lg">
