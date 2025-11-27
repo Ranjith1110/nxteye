@@ -6,15 +6,37 @@ import "react-toastify/dist/ReactToastify.css";
 
 const API_URL = import.meta.env.VITE_APP_BASE_URL;
 
-const generateValues = (start, end, step, prefix = "") => {
+// --- OPTICAL CONSTANTS & GENERATORS ---
+
+// helper to generate array of strings
+const generateRange = (start, end, step, prefix = "") => {
     const vals = [];
-    for (let i = start; i <= end; i += step) vals.push(`${prefix}${i.toFixed(2)}`);
+    for (let i = start; i <= end; i += step) {
+        vals.push(`${prefix}${i.toFixed(2)}`);
+    }
     return vals;
 };
-const SPH_CYL_Values = [...generateValues(0.25, 20, 0.25, "+"), "0.00", ...generateValues(0.25, 20, 0.25, "-")].sort();
-const ADD_Values = generateValues(0.25, 4.0, 0.25, "+");
+
+// 1. GENERATE SPH/CYL: Negatives (Top) -> 0.00 -> Positives (Bottom)
+// We generate negatives in reverse order (e.g. -20 down to -0.25) so -20 is at the top of the list
+const negatives = [];
+for (let i = 20.00; i >= 0.25; i -= 0.25) {
+    negatives.push(`-${i.toFixed(2)}`);
+}
+const positives = generateRange(0.25, 20.00, 0.25, "+");
+
+const SPH_CYL_Values = [...negatives, "0.00", ...positives];
+
+// 2. GENERATE ADD: Start from 0.00 up to +4.00
+const ADD_Values = ["0.00", ...generateRange(0.25, 4.0, 0.25, "+")];
+
+// 3. AXIS: 0 to 180
 const AXIS_Values = Array.from({ length: 37 }, (_, i) => i * 5);
-const PD_Values = Array.from({ length: 31 }, (_, i) => (25 + i * 0.5).toFixed(1));
+
+// 4. PD: 40mm to 80mm (Standard Clinical Range)
+const PD_Values = Array.from({ length: 81 }, (_, i) => (40 + i * 0.5).toFixed(1));
+
+// 5. VA: Standard Acuity
 const VA_Values = ["6/6", "6/9", "6/12", "6/18", "6/24", "6/36", "6/60", "N6", "N8", "N10", "N12"];
 
 const safeAmount = (value) => {
@@ -69,8 +91,8 @@ const OrderSummary = () => {
     });
 
     const [glassReadings, setGlassReadings] = useState({
-        left: { SPH: "0.00", CYL: "0.00", AXIS: "0", ADD: "0.00", PD: "62", DistanceVA: "6/6", NearVA: "N6" },
-        right: { SPH: "0.00", CYL: "0.00", AXIS: "0", ADD: "0.00", PD: "62", DistanceVA: "6/6", NearVA: "N6" },
+        left: { SPH: "0.00", CYL: "0.00", AXIS: "0", ADD: "0.00", PD: "62.0", DistanceVA: "6/6", NearVA: "N6" },
+        right: { SPH: "0.00", CYL: "0.00", AXIS: "0", ADD: "0.00", PD: "62.0", DistanceVA: "6/6", NearVA: "N6" },
     });
     const [clReadings, setClReadings] = useState({
         left: { SPH: "0.00", CYL: "0.00", AXIS: "0", BC: "8.6", DIA: "14.0" },
